@@ -17,7 +17,10 @@ export default {
     }
   },
   props: {
-    fen: String,
+    fen: {
+      type: String,
+      default: ''
+    },
     free: {
       type: Boolean,
       default: false
@@ -25,6 +28,12 @@ export default {
     showThreats: {
       type: Boolean,
       default: false
+    }
+  },
+  watch:{
+    fen: function (newFen) {
+      this.fen = newFen
+      this.loadPosition()
     }
   },
   methods: {
@@ -78,7 +87,6 @@ export default {
             dests: this.possibleMoves()
           }
         });
-        this.paintThreats()
         this.afterMove()
       };
     },
@@ -116,14 +124,14 @@ export default {
       threats['threat_'+color] = captures;
       return threats
     },
-    loadPosition({fen, free = false} = {}) { //set a default value for the configuration object itself to allow call to loadPosition()
-      this.game = new Chess(fen);
+    loadPosition() { //set a default value for the configuration object itself to allow call to loadPosition()
+      this.game.load(this.fen)
       this.board = Chessground(this.$refs.board, {
-        fen: fen,
+        fen: this.game.fen(),
         turnColor: this.toColor(),
         movable: {
           color: this.toColor(),
-          free: free,
+          free: this.free,
           dests: this.possibleMoves()
         }
       })
@@ -136,7 +144,7 @@ export default {
     this.loadPosition()
   },
   created() {
-    this.game = null
+    this.game = new Chess()
     this.board = null
   }
 
