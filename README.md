@@ -2,11 +2,14 @@
 
  Examples for the [vue-chessboard component](https://github.com/vitogit/vue-chessboard) 
 
+![http://g.recordit.co/40JDuy8tAk.gif](http://g.recordit.co/40JDuy8tAk.gif)
+
+
 # Examples 
 
   Check live examples: [http://vitomd.com/vue-chessboard-examples/](http://vitomd.com/vue-chessboard-examples/)
   
-  Check full application using the component: [Chess Guardian](vitomd.com/vue-chess-guardian/)
+  Check full application using the component: [Chess Guardian](http://vitomd.com/vue-chess-guardian/)
 
   #### Simple Chessboard with legal moves
   ```html
