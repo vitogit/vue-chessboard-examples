@@ -1,6 +1,6 @@
 {
-  "name": "vue-chess-tactics",
-  "description": "Create, organize and resolve chess tactics",
+  "name": "vue-chessboard-examples",
+  "description": "Simple examples for vue-chessboard component",
   "version": "1.0.0",
   "author": "vitogit <vitogit@users.noreply.github.com>",
   "license": "MIT",
@@ -10,10 +10,8 @@
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
-    "buefy": "^0.6.2",
-    "chess.js": "^0.10.2",
-    "chessground": "^7.2.10",
-    "vue": "^2.5.11"
+    "vue": "^2.5.11",
+    "vue-chessboard": "^0.5.0"
   },
   "browserslist": [
     "> 1%",
