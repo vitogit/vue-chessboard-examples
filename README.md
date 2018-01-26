@@ -4,7 +4,7 @@
 
 # Examples 
 
-  Check live examples: 
+  Check live examples: [http://vitomd.com/vue-chessboard-examples/](http://vitomd.com/vue-chessboard-examples/)
   
   Check full application using the component: [Chess Guardian](vitomd.com/vue-chess-guardian/)
 
