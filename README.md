@@ -5,6 +5,7 @@
 # Examples 
 
   Check live examples: 
+  
   Check full application using the component: [Chess Guardian](vitomd.com/vue-chess-guardian/)
 
   #### Simple Chessboard with legal moves
