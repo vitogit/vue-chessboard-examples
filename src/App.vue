@@ -20,6 +20,11 @@
     <div>
       {{this.positionInfo}}
     </div>
+
+    <h1>Chessboard with onpromote callback. </h1>
+    It will show you a simple confirmation box asking if you want to promote to queen or rook.
+    You can use a fancy piece selector instead of this simple confirmation box.
+    <chessboard :onPromotion="promote"/>
   </div>
 </template>
 
@@ -31,7 +36,7 @@ export default {
   name: 'app',
   components: {
     chessboard
-  },  
+  },
   data () {
     return {
       currentFen: '',
@@ -44,13 +49,19 @@ export default {
     },
     loadFen(fen) {
       this.currentFen = fen
+    },
+    promote() {
+      if (confirm("Want to promote to rook? Queen by default") ) {
+        return 'r'
+      } else {
+        return 'q'
+      }
     }
   },
   created() {
-    this.fens = ['5rr1/3nqpk1/p3p2p/Pp1pP1pP/2pP1PN1/2P1Q3/2P3P1/R4RK1 b - f3 0 28', 
+    this.fens = ['5rr1/3nqpk1/p3p2p/Pp1pP1pP/2pP1PN1/2P1Q3/2P3P1/R4RK1 b - f3 0 28',
                 'r4rk1/pp1b3p/6p1/8/3NpP2/1P4P1/P2K3P/R6R w - - 0 22'
                 ]
-    
-  }  
+  }
 }
 </script>
