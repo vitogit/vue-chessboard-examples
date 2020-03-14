@@ -8,7 +8,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "publish": "yarn build && rm -rf docs; cp -r dist docs"
+    "deploy": "yarn build && rm -rf docs; cp -r dist docs"
   },
   "dependencies": {
     "core-js": "^3.6.4",

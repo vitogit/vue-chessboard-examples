@@ -1,15 +1,12 @@
 # vue-chessboard-examples
 
- Examples for the [vue-chessboard component](https://github.com/vitogit/vue-chessboard)
+ This repo contain several examples for the [vue-chessboard component](https://github.com/vitogit/vue-chessboard)
 
 ![http://g.recordit.co/40JDuy8tAk.gif](http://g.recordit.co/40JDuy8tAk.gif)
 
+Live examples: [http://vitomd.com/vue-chessboard-examples/](http://vitomd.com/vue-chessboard-examples/)
 
 # Examples
-
-  Check live examples: [http://vitomd.com/vue-chessboard-examples/](http://vitomd.com/vue-chessboard-examples/)
-
-  Check full application using the component: [Chess Guardian](http://vitomd.com/vue-chess-guardian/)
 
   #### Simple Chessboard with legal moves
   ```html
@@ -63,16 +60,18 @@ promote() {
        <chessboard :fen="fen" />
     </div>
   ```
+  #### Full application
+  Here is a full application using the component: [Chess Guardian](http://vitomd.com/vue-chess-guardian/)
 
 ## Build Setup
 
 ``` bash
 # install dependencies
-npm install
+yarn install
 
 # serve with hot reload at localhost:8081
-npm run dev
+yarn serve
 
 # build for production with minification
-npm run build
+npm build
 ```
