@@ -1,14 +1,14 @@
 {
   "name": "vue-chessboard-examples",
   "description": "Simple examples for vue-chessboard component",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "vitogit <vitogit@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "publish": "npm run build && rm -rf docs; cp -r dist docs"
+    "publish": "yarn build && rm -rf docs; cp -r dist docs"
   },
   "dependencies": {
     "core-js": "^3.6.4",
