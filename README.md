@@ -56,13 +56,21 @@ promote() {
     return 'r' // This will promote to a rook
 }
   ```
+
+  #### Multiple Chessboards with different fens. 
+  ```html
+    <div v-for="fen in fens">
+       <chessboard :fen="fen" />
+    </div>
+  ```
+
 ## Build Setup
 
 ``` bash
 # install dependencies
 npm install
 
-# serve with hot reload at localhost:8080
+# serve with hot reload at localhost:8081
 npm run dev
 
 # build for production with minification

@@ -11,7 +11,7 @@
 
     <h1>Fen binded to the chessboard (load position when click on a new position)</h1>
     <chessboard :fen="currentFen"/>
-    <button class="button is-light" @click="loadFen(fen)" v-for="fen in fens">
+    <button class="button is-light" @click="loadFen(fen)" v-for="fen in fens" :key="fen">
       {{fen}}
     </button>
 
@@ -25,6 +25,11 @@
     It will show you a simple confirmation box asking if you want to promote to queen or rook.
     You can use a fancy piece selector instead of this simple confirmation box.
     <chessboard :onPromotion="promote"/>
+    
+    <h1>Multiple Chessboards with different fens. </h1>
+    <div v-for="fen in fens" :key="fen">
+       <chessboard :fen="fen" />
+    </div>
   </div>
 </template>
 
