@@ -11,7 +11,7 @@
 
     <h1>Fen binded to the chessboard (load position when click on a new position)</h1>
     <chessboard :fen="currentFen"/>
-    <button class="button is-light" @click="loadFen(fen)" v-for="fen in fens" :key="fen">
+    <button class="button is-light" @click="loadFen(fen)" v-for="fen in fens"  :key="fen + '-binded'">
       {{fen}}
     </button>
 
