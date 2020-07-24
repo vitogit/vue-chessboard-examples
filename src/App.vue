@@ -30,17 +30,23 @@
     <div v-for="fen in fens" :key="fen">
        <chessboard :fen="fen" />
     </div>
+
+    <h1>Extended Component (Play vs random AI). </h1>
+    <p> You can extend the chessboard component to add new methods</p>
+    <newboard/>
   </div>
 </template>
 
 <script>
 import {chessboard} from 'vue-chessboard'
 import 'vue-chessboard/dist/vue-chessboard.css'
+import newboard from './newboard.vue'
 
 export default {
   name: 'app',
   components: {
-    chessboard
+    chessboard,
+    newboard
   },
   data () {
     return {
