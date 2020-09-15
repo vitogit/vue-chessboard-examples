@@ -4,7 +4,7 @@
 
 ![http://g.recordit.co/40JDuy8tAk.gif](http://g.recordit.co/40JDuy8tAk.gif)
 
-Live examples: [http://vitomd.com/vue-chessboard-examples/](http://vitomd.com/vue-chessboard-examples/)
+Live examples: [https://vitogit.github.io/vue-chessboard-examples/](https://vitogit.github.io/vue-chessboard-examples/)
 
 # Examples
 
