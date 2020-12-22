@@ -25,7 +25,7 @@
     It will show you a simple confirmation box asking if you want to promote to queen or rook.
     You can use a fancy piece selector instead of this simple confirmation box.
     <chessboard :onPromotion="promote"/>
-    
+
     <h1>Multiple Chessboards with different fens. </h1>
     <div v-for="fen in fens" :key="fen">
        <chessboard :fen="fen" />
@@ -34,6 +34,11 @@
     <h1>Extended Component (Play vs random AI). </h1>
     <p> You can extend the chessboard component to add new methods</p>
     <newboard/>
+
+    <h1>Fully free piece movement. </h1>
+    <p> You can extend the chessboard component to use all  <a href='https://github.com/ornicar/chessground/blob/master/src/config.ts'>chessgrounds configurations</a></p>
+    <editor/>
+
   </div>
 </template>
 
@@ -41,12 +46,14 @@
 import {chessboard} from 'vue-chessboard'
 import 'vue-chessboard/dist/vue-chessboard.css'
 import newboard from './newboard.vue'
+import editor from './editor.vue'
 
 export default {
   name: 'app',
   components: {
     chessboard,
-    newboard
+    newboard,
+    editor
   },
   data () {
     return {

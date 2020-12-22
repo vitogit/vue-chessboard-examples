@@ -54,16 +54,16 @@ promote() {
 }
   ```
 
-  #### Multiple Chessboards with different fens. 
+  #### Multiple Chessboards with different fens.
   ```html
     <div v-for="fen in fens">
        <chessboard :fen="fen" />
     </div>
   ```
 
-  #### Extended Component (Play vs random AI). 
+  #### Extended Component (Play vs random AI).
   <p> You can extend the chessboard component to add new methods</p>
-  
+
   ```html
     // newboard.vue
     <script>
@@ -110,6 +110,31 @@ promote() {
     }
     </script>
   ```
+
+  #### Extended Component (Simple board editor).
+  <p>  Move any piece to anywhere. You can extend the chessboard component to use all <a href='https://github.com/ornicar/chessground/blob/master/src/config.ts'>chessgrounds configurations</a></p>
+
+  ```html
+    // editor.vue
+    <script>
+    import { chessboard }  from 'vue-chessboard'
+
+    export default {
+      name: 'editor',
+      extends: chessboard,
+      mounted() {
+        this.board.set({
+          movable: {
+            color: 'both',
+            free: true,
+            events: { after: undefined }
+          }
+        })
+      }
+    }
+    </script>
+  ```
+
   #### Full application
   Here is a full application using the component: [Chess Guardian](http://vitomd.com/vue-chess-guardian/)
 
