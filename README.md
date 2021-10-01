@@ -61,18 +61,25 @@ promote() {
     </div>
   ```
 
-  #### Extended Component (Play vs random AI).
+  #### Extended Component (Play vs random AI with undo button).
   <p> You can extend the chessboard component to add new methods</p>
+  <p> Also you can undo a move using Vue events</p>
 
   ```html
     // newboard.vue
+
     <script>
     import { chessboard }  from 'vue-chessboard'
+    import bus from './bus.js'
 
     export default {
       name: 'newboard',
       extends: chessboard,
       methods: {
+        undo() {
+          this.game.undo()
+          this.board.set({fen: this.game.fen()})
+        },
         userPlay() {
           return (orig, dest) => {
             if (this.isPromotion(orig, dest)) {
@@ -106,9 +113,30 @@ promote() {
         this.board.set({
           movable: { events: { after: this.userPlay()} },
         })
+      },
+      created() {
+        bus.$on('undo', () => {
+          this.undo()
+        })
       }
     }
     </script>
+  ```
+  ```html
+    // bus.js
+    import Vue from 'vue'
+    export default new Vue()
+  ```
+  ```html
+    //App.vue - emit the events
+    <button class="button is-light" @click="undo()">UNDO</button>
+
+    ....
+    methods: {
+      undo() {
+        bus.$emit('undo')
+      }
+    }
   ```
 
   #### Extended Component (Simple board editor).

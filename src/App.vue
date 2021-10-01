@@ -31,9 +31,11 @@
        <chessboard :fen="fen" />
     </div>
 
-    <h1>Extended Component (Play vs random AI). </h1>
-    <p> You can extend the chessboard component to add new methods</p>
+    <h1>Extended Component (Play vs random AI with undos). </h1>
+    <p> You can extend the chessboard component to add new methods. Play against random moves and undo the moves</p>
+
     <newboard/>
+    <button class="button is-light" @click="undo()">UNDO</button>
 
     <h1>Fully free piece movement. </h1>
     <p> You can extend the chessboard component to use all  <a href='https://github.com/ornicar/chessground/blob/master/src/config.ts'>chessgrounds configurations</a></p>
@@ -47,6 +49,7 @@ import {chessboard} from 'vue-chessboard'
 import 'vue-chessboard/dist/vue-chessboard.css'
 import newboard from './newboard.vue'
 import editor from './editor.vue'
+import bus from './bus.js'
 
 export default {
   name: 'app',
@@ -74,6 +77,9 @@ export default {
       } else {
         return 'q'
       }
+    },
+    undo() {
+      bus.$emit('undo')
     }
   },
   created() {

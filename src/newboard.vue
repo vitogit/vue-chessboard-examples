@@ -1,11 +1,16 @@
 
 <script>
 import { chessboard }  from 'vue-chessboard'
+import bus from './bus.js'
 
 export default {
   name: 'newboard',
   extends: chessboard,
   methods: {
+    undo() {
+      this.game.undo()
+      this.board.set({fen: this.game.fen()})
+    },
     userPlay() {
       return (orig, dest) => {
         if (this.isPromotion(orig, dest)) {
@@ -38,6 +43,11 @@ export default {
   mounted() {
     this.board.set({
       movable: { events: { after: this.userPlay()} },
+    })
+  },
+  created() {
+    bus.$on('undo', () => {
+      this.undo()
     })
   }
 }
