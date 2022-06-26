@@ -22,22 +22,22 @@ export default {
 }
 </script>
 
-<style>
-.field {
-  display: flex;
-  flex-wrap: 1;
-}
-
+<style lang='scss'>
 .header {
   font-size: 24px;
   font-weight: bold;
 }
 
-.title {
-  flex: 1;
-}
+.field {
+  display: flex;
+  flex-wrap: 1;
 
-.value {
-  flex: 9;
+  .title {
+    flex: 1;
+  }
+
+  .value {
+    flex: 9;
+  }
 }
 </style>

@@ -42,7 +42,7 @@ export default {
   </div>
 </template>
 
-<style>
+<style lang='scss'>
 #app {
   display: flex;
   flex-direction: row;
@@ -54,12 +54,12 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
 
-#logo {
-  font-size: 36px;
-  text-align: center;
-  margin: 16px;
+  #logo {
+    font-size: 36px;
+    text-align: center;
+    margin: 16px;
+  }
 }
 
 #body {
@@ -67,15 +67,15 @@ export default {
 
   display: flex;
   flex-direction: row;
-}
 
-#board {
-  margin: 12px;
-  padding: 12px;
-}
+  #board {
+    margin: 12px;
+    padding: 12px;
+  }
 
-#contract {
-  margin: 12px;
-  padding: 12px;
+  #contract {
+    margin: 12px;
+    padding: 12px;
+  }
 }
 </style>
