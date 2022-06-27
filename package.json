@@ -1,6 +1,6 @@
 {
-  "name": "vue-chessboard-examples",
-  "description": "Simple examples for vue-chessboard component",
+  "name": "blockchain-chess-lounge",
+  "description": "A peer to peer chess application which settles on the blockchain",
   "version": "1.1.0",
   "author": "vitogit <vitogit@users.noreply.github.com>",
   "license": "MIT",
@@ -8,7 +8,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "deploy": "yarn build && rm -rf docs; cp -r dist docs"
+    "deploy": "aws --profile hbpcb s3 sync --delete dist s3://blockchain-chess-lounge"
   },
   "dependencies": {
     "core-js": "^3.6.4",
