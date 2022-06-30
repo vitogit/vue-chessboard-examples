@@ -1,7 +1,15 @@
 .DS_Store
 node_modules
 /dist
+cache/
 *bak
+
+# Temporary excludes
+# Smart contracts for now
+contracts/Game.sol
+test/game.js
+migrations/
+src/assets/
 
 # local env files
 .env.local
