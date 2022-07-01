@@ -11,6 +11,8 @@
     "deploy": "aws --profile hbpcb s3 sync --delete dist s3://blockchain-chess-lounge"
   },
   "dependencies": {
+    "bourbon": "^7.2.0",
+    "bourbon-neat": "^4.0.0",
     "core-js": "^3.6.4",
     "vue": "^2.6.11",
     "vue-chessboard": "^0.6.6"

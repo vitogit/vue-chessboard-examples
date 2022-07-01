@@ -2007,6 +2007,16 @@ boolbase@^1.0.0:
   resolved "https://registry.npmjs.org/boolbase/-/boolbase-1.0.0.tgz"
   integrity sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==
 
+bourbon-neat@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/bourbon-neat/-/bourbon-neat-4.0.0.tgz#8aa1794aafba50b13993817af5e16c449739e332"
+  integrity sha512-Ql1JdvjNvK9NbGvcBpsDkfuRRMK8fZ/mx1gRyZEy3PM/kqQ8QX0PcmKEqnZMl18YLfKaDwC0qa+e36TlDmT49g==
+
+bourbon@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/bourbon/-/bourbon-7.2.0.tgz#32bc40fd368383e4b7b82bb832c34c67584282bd"
+  integrity sha512-Zx/lY/YzMkSyFC7yYPp9QcI2OCWnUHQdSrXvRtfnaUGT/edKNh44mVPYkP7QEyk6yQOLCJottsuTnidqKcpbNg==
+
 brace-expansion@^1.1.7:
   version "1.1.11"
   resolved "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.11.tgz"

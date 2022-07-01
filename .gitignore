@@ -1,6 +1,7 @@
 .DS_Store
 node_modules
-/dist
+dist/
+build/
 cache/
 *bak
 
@@ -9,7 +10,7 @@ cache/
 contracts/Game.sol
 test/game.js
 migrations/
-src/assets/
+app/assets/
 
 # local env files
 .env.local
