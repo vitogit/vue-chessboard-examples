@@ -12,14 +12,12 @@ export default {
 
 <template>
   <div id='lobby'>
-    <div id='challenge-player'>
-      <input
-        type='text'
-        id='player-address'
+    <div id='player-lookup'>
+      <input type='text'
         name='player-address'
-        placeholder='ETH address or ENS domain'
+        placeholder='ETH Address / ENS Domain'
       >
-      <button @click='wallet.ethBalance++'>Search</button>
+      <button @click='wallet.ethBalance++'>Go</button>
     </div>
 
     <div id='open-challenges'>

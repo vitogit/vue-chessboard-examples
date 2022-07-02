@@ -1,5 +1,5 @@
 <template>
   <div id='settings'>
-    Under contruction...
+    Under construction...
   </div>
 </template>

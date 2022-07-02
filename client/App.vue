@@ -68,6 +68,19 @@ html, body {
     max-width: 1024px;
     height: 95%;
     @include margin(1em 1em);
+
+    #page {
+      max-width: 36em;
+    }
+  }
+}
+
+// Fonts
+#app {
+  #header {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
   }
 }
 
@@ -91,10 +104,6 @@ html, body {
   }
 }
 
-// Sidebar flexbox
-#sidebar {
-}
-
 // Margins and padding
 #app {
   #sidebar {
@@ -102,23 +111,49 @@ html, body {
       @include padding(.5em);
     }
 
-    #header {
-      @include margin(.2em);
-    }
-
     #wallet {
-      @include margin(.4em .2em);
+      @include margin(1em .2em);
       @include padding(.2em .4em);
     }
 
     #{$all-buttons} {
       @include margin(.4em 2em);
-      @include padding(.2em null);
     }
   }
 
   #page {
-      @include margin(null 1em);
+    @include margin(.4em 1em);
+  }
+
+  #{$all-buttons} {
+    @include padding(.2em .4em);
+  }
+
+  input {
+    padding: .4em;
+  }
+}
+
+// Muted theme
+#app {
+  * {
+    background-color: transparent;
+    color: black;
+    border-color: black;
+  }
+
+  #{$all-buttons} {
+    font-size: 16px;
+    border-style: solid;
+    border-radius: 6px;
+    border-width: 3px;
+  }
+
+  input {
+    font-size: 16px;
+    border-style: solid;
+    border-radius: 6px;
+    border-width: 3px;
   }
 }
 
@@ -132,22 +167,6 @@ html, body {
     border-style: solid;
     border-radius: 6px;
     border-width: 3px;
-    border-color: lightgrey;
-  }
-
-  #{$all-buttons} {
-    border-style: solid;
-    border-radius: 6px;
-    border-width: 3px;
-  }
-}
-
-// Fonts
-#app {
-  #header {
-    font-size: 28px;
-    font-weight: bold;
-    text-align: center;
   }
 }
 </style>

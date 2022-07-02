@@ -20,6 +20,7 @@ window.vm = new Vue({
   el: '#app',
   router: new VueRouter({
     routes: [
+      { path: '/', redirect: '/ai' },
       { path: '/about', component: AboutPage },
       { path: '/lobby', component: LobbyPage },
       { path: '/profile/:id', component: ProfilePage },

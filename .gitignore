@@ -10,7 +10,8 @@ cache/
 contracts/Game.sol
 test/game.js
 migrations/
-app/assets/
+client/assets/
+client/styles/
 
 # local env files
 .env.local
