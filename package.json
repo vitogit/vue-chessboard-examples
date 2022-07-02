@@ -15,7 +15,8 @@
     "bourbon-neat": "^4.0.0",
     "core-js": "^3.6.4",
     "vue": "^2.6.11",
-    "vue-chessboard": "^0.6.6"
+    "vue-chessboard": "^0.6.6",
+    "vue-router": "3.5.2"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~5.0.6",

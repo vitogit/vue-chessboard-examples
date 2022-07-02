@@ -38,15 +38,14 @@ export default {
       <CryptoWallet />
       <ConnectWallet />
       <div id='navigation'>
-        <button disabled>About</button>
-        <button>Lobby</button>
-        <button>Fun Play</button>
-        <button disabled>Settings</button>
+        <router-link tag='button' to='/about'>About</router-link>
+        <router-link tag='button' to='/lobby'>Lobby</router-link>
+        <router-link tag='button' to='/ai'>Fun Play</router-link>
+        <router-link tag='button' to='/settings'>Settings</router-link>
       </div>
     </div>
     <div id='body'>
-      <AiBoard id='board' @onMove='showInfo' />
-      <ContractData id='contract' v-bind='positionInfo' />
+      <router-view />
     </div>
   </div>
 </template>
@@ -56,48 +55,56 @@ export default {
 @import '~bourbon-neat';
 
 #app {
-  @include grid-container;
-  $app-container: (columns: 5);
-  $sidebar-buttons: (columns: 1, gutter: 3em);
-  $app-body: (columns: 2);
+  max-width: 1024px;
+  display: flex;
 
   #sidebar {
-    @include grid-column(1, $app-container);
-    @include padding(6px);
+    flex: 1;
 
     #{$all-buttons} {
-      @include grid-column(1, $sidebar-buttons);
+      flex-grow: 1;
     }
   }
 
   #body {
-    @include grid-column(3, $app-container);
-
+    flex: 4;
     display: flex;
 
     #board {
       flex-shrink: 1;
-      @include margin(12px);
-      @include padding(12px);
     }
 
     #contract {
       flex: 1;
-      @include margin(12px);
-      @include padding(12px);
     }
   }
 }
 
 #sidebar {
+  @include grid-container;
+  $sidebar-buttons: (columns: 1, gutter: 2em);
+  $crypto-wallet: (columns: 1, gutter: 1em);
+
+  #wallet {
+    @include grid-column(1, $crypto-wallet);
+  }
+
+  #{$all-buttons} {
+    @include grid-column(1, $sidebar-buttons);
+  }
+}
+
+#sidebar {
+  padding: .5em;
   border-style: solid;
   border-radius: 6px;
   border-width: 3px;
 
   #header {
-    font-size: 36px;
+    @include margin(6px 6px);
+    font-size: 28px;
+    font-weight: bold;
     text-align: center;
-    margin: 16px;
   }
 
   #{$all-buttons} {
@@ -115,10 +122,14 @@ export default {
     border-radius: 6px;
     border-width: 3px;
     border-color: lightgrey;
-  }
 
-  #balances {
-    @include padding(.1em);
+    #balances {
+      @include padding(.1em);
+    }
   }
+}
+
+#body {
+    @include padding(16px 16px);
 }
 </style>
