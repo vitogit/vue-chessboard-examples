@@ -1,3 +1,15 @@
+<script>
+import useWalletStore from '../stores/wallet';
+
+export default {
+  name: 'UserLobby',
+  setup() {
+    const wallet = useWalletStore();
+    return { wallet };
+  }
+}
+</script>
+
 <template>
   <div id='lobby'>
     <div id='challenge-player'>
@@ -7,7 +19,7 @@
         name='player-address'
         placeholder='ETH address or ENS domain'
       >
-      <button>Search</button>
+      <button @click='wallet.ethBalance++'>Search</button>
     </div>
 
     <div id='open-challenges'>

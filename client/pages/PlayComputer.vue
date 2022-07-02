@@ -3,7 +3,7 @@ import AiBoard from '../components/AiBoard.vue';
 import ContractData from '../components/ContractData.vue';
 
 export default {
-  name: 'app',
+  name: 'PlayComputer',
   components: {
     AiBoard,
     ContractData,

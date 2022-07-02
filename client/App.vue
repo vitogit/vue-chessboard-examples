@@ -1,32 +1,29 @@
 <script>
-import AiBoard from './components/AiBoard.vue';
 import CryptoWallet from './components/CryptoWallet.vue';
 import ConnectWallet from './components/ConnectWallet.vue';
-import ContractData from './components/ContractData.vue';
+import useWalletStore from './stores/wallet';
 
 export default {
-  name: 'app',
+  name: 'App',
   components: {
-    AiBoard,
-    ConnectWallet,
     CryptoWallet,
-    ContractData,
+    ConnectWallet,
   },
-  data () {
-    return {
-      currentFen: '',
-      positionInfo: null
+  setup() {
+    const wallet = useWalletStore();
+
+    if (typeof window.ethereum === 'undefined') {
+      console.log('Metamask is NOT installed!');
+      return;
+    } else {
+      console.log('Metamask is installed!');
+      wallet.$patch({
+        isInstalled: true,
+        isConnected: ethereum.isConnected()
+      })
     }
-  },
-  methods: {
-    showInfo(data) {
-      this.positionInfo = data;
-    },
-    loadFen(fen) {
-      this.currentFen = fen;
-    }
-  },
-  created() {
+
+    return { wallet };
   }
 }
 </script>
@@ -34,17 +31,26 @@ export default {
 <template>
   <div id='app'>
     <div id='sidebar'>
-      <div id='header' class='font-smooth'>Blockchain Chess Lounge</div>
-      <CryptoWallet />
-      <ConnectWallet />
-      <div id='navigation'>
-        <router-link tag='button' to='/about'>About</router-link>
-        <router-link tag='button' to='/lobby'>Lobby</router-link>
-        <router-link tag='button' to='/ai'>Fun Play</router-link>
-        <router-link tag='button' to='/settings'>Settings</router-link>
+      <div class='container'>
+        <div id='header' class='font-smooth'>Blockchain Chess Lounge</div>
+        <CryptoWallet
+          :ethBalance='wallet.ethBalance'
+          :daiBalance='wallet.daiBalance'
+        />
+        <div id='navigation'>
+          <ConnectWallet
+            :isInstalled='wallet.isInstalled'
+            :isConnected='wallet.isConnected'
+            :onClick='() => this.$router.push("/lobby")'
+          >Lobby</ConnectWallet>
+          <router-link tag='button' to='/ai'>Fun Play</router-link>
+          <router-link tag='button' to='/about'>About</router-link>
+          <router-link tag='button' to='/settings'>Settings</router-link>
+        </div>
       </div>
     </div>
-    <div id='body'>
+
+    <div id='page'>
       <router-view />
     </div>
   </div>
@@ -52,84 +58,96 @@ export default {
 
 <style lang='scss'>
 @import '~bourbon';
-@import '~bourbon-neat';
 
+// Swallow the page
+html, body {
+  height: 100%;
+  margin: 0;
+
+  #app {
+    max-width: 1024px;
+    height: 95%;
+    @include margin(1em 1em);
+  }
+}
+
+// Flexboxes
 #app {
-  max-width: 1024px;
   display: flex;
 
   #sidebar {
+    flex-basis: 14em;
+    display: flex;
+    flex-direction: column;
+
+    #navigation {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  #page {
     flex: 1;
+  }
+}
+
+// Sidebar flexbox
+#sidebar {
+}
+
+// Margins and padding
+#app {
+  #sidebar {
+    .container {
+      @include padding(.5em);
+    }
+
+    #header {
+      @include margin(.2em);
+    }
+
+    #wallet {
+      @include margin(.4em .2em);
+      @include padding(.2em .4em);
+    }
 
     #{$all-buttons} {
-      flex-grow: 1;
+      @include margin(.4em 2em);
+      @include padding(.2em null);
     }
   }
 
-  #body {
-    flex: 4;
-    display: flex;
-
-    #board {
-      flex-shrink: 1;
-    }
-
-    #contract {
-      flex: 1;
-    }
+  #page {
+      @include margin(null 1em);
   }
 }
 
-#sidebar {
-  @include grid-container;
-  $sidebar-buttons: (columns: 1, gutter: 2em);
-  $crypto-wallet: (columns: 1, gutter: 1em);
-
-  #wallet {
-    @include grid-column(1, $crypto-wallet);
-  }
-
-  #{$all-buttons} {
-    @include grid-column(1, $sidebar-buttons);
-  }
-}
-
-#sidebar {
-  padding: .5em;
+// Sidebar borders
+#sidebar .container {
   border-style: solid;
   border-radius: 6px;
   border-width: 3px;
 
-  #header {
-    @include margin(6px 6px);
-    font-size: 28px;
-    font-weight: bold;
-    text-align: center;
-  }
-
-  #{$all-buttons} {
-    @include margin(4px null);
-    @include padding(4px null);
-    border-style: solid;
-    border-radius: 6px;
-    border-width: 3px;
-  }
-
   #wallet {
-    @include margin(.5em);
-    @include padding(.2em);
     border-style: solid;
     border-radius: 6px;
     border-width: 3px;
     border-color: lightgrey;
+  }
 
-    #balances {
-      @include padding(.1em);
-    }
+  #{$all-buttons} {
+    border-style: solid;
+    border-radius: 6px;
+    border-width: 3px;
   }
 }
 
-#body {
-    @include padding(16px 16px);
+// Fonts
+#app {
+  #header {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+  }
 }
 </style>
