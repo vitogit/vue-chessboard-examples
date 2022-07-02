@@ -1,10 +1,7 @@
 <script>
-import ConnectWallet from './ConnectWallet.vue';
-
 export default {
-  name: 'Wallet',
+  name: 'CryptoWallet',
   components: {
-    ConnectWallet
   },
   data () {
     return {
@@ -32,8 +29,6 @@ export default {
       <div class='coin'>DAI</div>
       <div class='balance'>0.000</div>
     </div>
-
-    <ConnectWallet class='outline font-blocky' />
   </div>
 </template>
 
@@ -41,17 +36,22 @@ export default {
 @import '~bourbon-neat';
 
 #balances {
-  font-size: 24px;
-  font-weight: bold;
-  @include grid-container;
-  $balances: (columns: 3, gutter: 23px);
+  display: flex;
+  flex-wrap: wrap;
+
+  * {
+    font-size: 24px;
+    font-weight: bold;
+  }
 
   .coin {
-    @include grid-column(2, $balances);
+    flex-basis: 50%;
   }
 
   .balance {
-    @include grid-column(1, $balances);
+    flex-basis: 50%;
+    justify-content: flex-end;
+    text-align: right;
   }
 }
 </style>

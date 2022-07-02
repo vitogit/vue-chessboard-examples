@@ -1,14 +1,16 @@
 <script>
 import AiBoard from './components/AiBoard.vue';
+import CryptoWallet from './components/CryptoWallet.vue';
+import ConnectWallet from './components/ConnectWallet.vue';
 import ContractData from './components/ContractData.vue';
-import Wallet from './components/Wallet.vue';
 
 export default {
   name: 'app',
   components: {
     AiBoard,
+    ConnectWallet,
+    CryptoWallet,
     ContractData,
-    Wallet
   },
   data () {
     return {
@@ -33,12 +35,13 @@ export default {
   <div id='app'>
     <div id='sidebar'>
       <div id='header' class='font-smooth'>Blockchain Chess Lounge</div>
-      <Wallet />
+      <CryptoWallet />
+      <ConnectWallet />
       <div id='navigation'>
-        <button>About</button>
+        <button disabled>About</button>
         <button>Lobby</button>
         <button>Fun Play</button>
-        <button>Settings</button>
+        <button disabled>Settings</button>
       </div>
     </div>
     <div id='body'>
@@ -97,21 +100,25 @@ export default {
     margin: 16px;
   }
 
-  #balances {
-    @include margin(.5em);
-    @include padding(.1em);
-    border-style: solid;
-    border-radius: 6px;
-    border-width: 3px;
-    border-color: lightgrey;
-  }
-
   #{$all-buttons} {
     @include margin(4px null);
     @include padding(4px null);
     border-style: solid;
     border-radius: 6px;
     border-width: 3px;
+  }
+
+  #wallet {
+    @include margin(.5em);
+    @include padding(.2em);
+    border-style: solid;
+    border-radius: 6px;
+    border-width: 3px;
+    border-color: lightgrey;
+  }
+
+  #balances {
+    @include padding(.1em);
   }
 }
 </style>
