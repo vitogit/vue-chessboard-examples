@@ -3,9 +3,11 @@ import { defineStore } from 'pinia';
 export default defineStore({
   id: 'wallet',
   state: () => ({
-    isInstalled: true,
-    isConnected: false,
+    installed: false,
+    connected: false,
     address: null,
+    signer: null,
+    provider: null,
     ethBalance: 0,
     daiBalance: 0
   })

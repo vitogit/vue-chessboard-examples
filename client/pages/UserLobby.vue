@@ -1,11 +1,27 @@
 <script>
-import useWalletStore from '../stores/wallet';
+import { isAddress, getAddress } from 'ethers/lib/utils';
 
 export default {
   name: 'UserLobby',
-  setup() {
-    const wallet = useWalletStore();
-    return { wallet };
+  data () {
+    return {
+      query: null
+    }
+  },
+  methods: {
+    async searchPlayer() {
+      console.log('query', this.query);
+      if (isAddress(this.query)) {
+        this.$router.push('/profile/'+getAddress(this.query));
+      } else {
+        alert('Please enter a valid address');
+      }
+    }
+  },
+  computed: {
+    isValidAddress() {
+      return isAddress(this.query);
+    }
   }
 }
 </script>
@@ -13,11 +29,14 @@ export default {
 <template>
   <div id='lobby'>
     <div id='player-lookup'>
-      <input type='text'
-        name='player-address'
+      <input
+        v-model='query'
         placeholder='ETH Address / ENS Domain'
-      >
-      <button disabled>Go</button>
+      />
+      <button
+        :disabled='!isValidAddress'
+        @click='searchPlayer'
+      >Go</button>
     </div>
 
     <div id='open-challenges'>
@@ -42,7 +61,7 @@ export default {
     }
 
     button {
-      margin-left: .5em;
+      margin-left: .4em;
     }
   }
 }

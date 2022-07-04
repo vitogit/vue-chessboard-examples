@@ -1,41 +1,54 @@
 <script>
 import useWalletStore from '../stores/wallet';
+import { ethers } from 'ethers';
+//import { formatUnits } from 'ethers/lib/utils';
+import { formatEther, commify } from 'ethers/lib/utils';
 
 export default {
   name: 'CryptoWallet',
-  props: [ 'ethBalance', 'daiBalance' ]
+  props: [ 'ethBalance', 'daiBalance' ],
+  methods: {
+    formatBalance(balance) {
+      return parseFloat(formatEther(balance)).toFixed(3);
+    }
+  }
 }
 </script>
 
 <template>
-  <div id='wallet'>
+  <div>
     <div id='balances'>
-      <div class='coin'>ETH</div>
-      <div class='balance'>{{ ethBalance }}</div>
-      <div class='coin'>DAI</div>
-      <div class='balance'>{{ daiBalance }}</div>
+      <div class='container'>
+        <div class='coin'>ETH</div>
+        <div class='balance'>{{ formatBalance(ethBalance) }}</div>
+      </div>
+      <div class='container'>
+        <div class='coin'>DAI</div>
+        <div class='balance'>{{ formatBalance(daiBalance) }}</div>
+      </div>
     </div>
   </div>
 </template>
 
 <style lang='scss'>
 #balances {
-  display: flex;
-  flex-wrap: wrap;
-
   * {
     font-size: 24px;
     font-weight: bold;
   }
 
-  .coin {
-    flex-basis: 50%;
-  }
+  .container {
+    flex: 1;
+    display: flex;
+    .coin {
+      flex-shrink: 1;
+    }
 
-  .balance {
-    flex-basis: 50%;
-    justify-content: flex-end;
-    text-align: right;
+    .balance {
+      flex-grow: 1;
+      justify-content: flex-end;
+      text-align: right;
+    }
   }
 }
 </style>

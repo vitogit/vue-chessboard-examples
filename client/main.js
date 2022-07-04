@@ -6,6 +6,7 @@ import App from './App.vue';
 
 import LobbyPage from './pages/UserLobby';
 import ProfilePage from './pages/UserProfile';
+import ChallengePage from './pages/ChallengeUser';
 import AboutPage from './pages/AboutPage';
 import PlayAiPage from './pages/PlayComputer';
 import SettingsPage from './pages/SettingsPage';
@@ -21,10 +22,11 @@ window.vm = new Vue({
   router: new VueRouter({
     routes: [
       { path: '/', redirect: '/ai' },
-      { path: '/about', component: AboutPage },
       { path: '/lobby', component: LobbyPage },
-      { path: '/profile/:id', component: ProfilePage },
+      { path: '/profile/:address', component: ProfilePage },
+      { path: '/challenge/:address', component: ChallengePage },
       { path: '/ai', component: PlayAiPage },
+      { path: '/about', component: AboutPage },
       { path: '/settings', component: SettingsPage },
     ]
   }),
