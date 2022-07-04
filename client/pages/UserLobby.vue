@@ -17,7 +17,7 @@ export default {
         name='player-address'
         placeholder='ETH Address / ENS Domain'
       >
-      <button @click='wallet.ethBalance++'>Go</button>
+      <button disabled>Go</button>
     </div>
 
     <div id='open-challenges'>
@@ -33,3 +33,17 @@ export default {
     </div>
   </div>
 </template>
+
+<style lang='scss'>
+#lobby {
+  #player-lookup {
+    input {
+      width: 18em;
+    }
+
+    button {
+      margin-left: .5em;
+    }
+  }
+}
+</style>

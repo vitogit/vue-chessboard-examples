@@ -130,7 +130,7 @@ html, body {
   }
 
   input {
-    padding: .4em;
+    @include padding(.2em .4em);
   }
 }
 
@@ -142,11 +142,16 @@ html, body {
     border-color: black;
   }
 
-  #{$all-buttons} {
+  button {
     font-size: 16px;
     border-style: solid;
     border-radius: 6px;
     border-width: 3px;
+  }
+
+  button:disabled {
+    color: lightgrey;
+    border-color: lightgrey;
   }
 
   input {

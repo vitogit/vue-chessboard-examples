@@ -16,7 +16,7 @@
       The game does not force a player to move out of check nor does it prevent a player from moving into check.  If the king is in check at the end of a players turn, the other player will have an opportunity to capture the king and win the game.
       </li>
       <li class='rule'>
-      The loser must voluntarily resign before their king is captured.  If their king is captured, their fair-play deposit will not be refunded.
+      The loser must voluntarily resign before their king is captured.  If the king is captured, the loser's fair-play deposit will not be refunded.
       </li>
     </ol>
 
