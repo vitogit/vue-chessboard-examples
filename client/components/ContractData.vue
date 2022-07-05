@@ -1,17 +1,20 @@
 <template>
   <div>
-    <div class='header'>Contract Data</div>
-    <div class='field'>
-      <div class='title'>Turn:</div>
-      <div class='value'>{{ this.turn }}</div>
+    <div class='text-lg'>Contract Data</div>
+
+    <div class='flex'>
+      <div class='flex-shrink'>Turn:</div>
+      <div class='flex-1 flex-end'>{{ this.turn }}</div>
     </div>
-    <div class='field'>
-      <div class='title'>History:</div>
-      <div class='value'>{{ this.history }}</div>
+
+    <div class='flex'>
+      <div class='flex-shrink'>History:</div>
+      <div class='flex-1 flex-end'>{{ this.history }}</div>
     </div>
-    <div class='field'>
-      <div class='title'>Fen:</div>
-      <div class='value'>{{ this.fen }}</div>
+
+    <div class='flex'>
+      <div class='flex-shrink'>Fen:</div>
+      <div class='flex-1 flex-end'>{{ this.fen }}</div>
     </div>
   </div>
 </template>
@@ -21,23 +24,3 @@ export default {
   props: ['turn', 'history', 'fen']
 }
 </script>
-
-<style lang='scss'>
-.header {
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.field {
-  display: flex;
-  flex-wrap: 1;
-
-  .title {
-    flex: 1;
-  }
-
-  .value {
-    flex: 9;
-  }
-}
-</style>

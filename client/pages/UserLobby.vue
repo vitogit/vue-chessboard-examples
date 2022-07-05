@@ -28,27 +28,30 @@ export default {
 
 <template>
   <div id='lobby'>
+    <div class='text-xl margin-tb'>Lobby</div>
+
     <div id='player-lookup'>
       <input
         v-model='query'
         placeholder='ETH Address / ENS Domain'
       />
       <button
+        class='margin-rl'
         :disabled='!isValidAddress'
         @click='searchPlayer'
       >Go</button>
     </div>
 
     <div id='open-challenges'>
-      <h2>Pending Challenges</h2>
+      <div class='text-lg margin-lg-tb'>Pending Challenges</div>
     </div>
 
     <div id='open-games'>
-      <h2>In-progress Games</h2>
+      <div class='text-lg margin-lg-tb'>In-progress Games</div>
     </div>
 
     <div id='history'>
-      <h2>History</h2>
+      <div class='text-lg margin-lg-tb'>History</div>
     </div>
   </div>
 </template>
@@ -56,13 +59,7 @@ export default {
 <style lang='scss'>
 #lobby {
   #player-lookup {
-    input {
-      width: 18em;
-    }
-
-    button {
-      margin-left: .4em;
-    }
+    input { width: 18em; }
   }
 }
 </style>

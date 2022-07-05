@@ -24,12 +24,7 @@ export default {
 
 <template>
   <div id='profile'>
-    <h2>Profile</h2>
-
-    <div id='player-info' class='flex'>
-      <div class='label flex-1'>Address</div>
-      <div class='info flex-1 flex-end'>{{ truncdAddr }}</div>
-    </div>
+    <div class='text-xl margin-tb'>Profile</div>
 
     <div id='player-record' class='flex flex-around'>
       <div class='bordered container flex-1'>
@@ -50,45 +45,44 @@ export default {
       </div>
     </div>
 
-    <div id='actions' class='flex'>
-      <div class='container flex-1 flex-center'>
+    <div id='player-info' class='flex center-align margin-lg'>
+      <div class='flex-1 text-ml'>Address</div>
+      <div class='flex-1 flex-end text-md'>{{ truncdAddr }}</div>
+    </div>
+
+    <div id='actions' class='flex margin-lg'>
+      <div class='flex-1 flex-start'>
         <button
           @click='$router.push("/challenge/"+address)'
         >Challenge</button>
       </div>
-      <div id='block-user' class='container flex-1 flex-end margin-1em'>
+      <div id='block-controls' class='flex-1 flex-end'>
         <button class='margin-rl' disabled>Block</button>
         <button disabled>Report</button>
       </div>
     </div>
 
     <div id='match-history'>
-      <h2>Match History</h2>
+      <div class='text-lg margin-lg-tb'>Match History</div>
     </div>
 
     <div id='player-history'>
-      <h2>Player History</h2>
+      <div class='text-lg margin-lg-tb'>Player History</div>
     </div>
   </div>
 </template>
 
 <style lang='scss'>
-@import '~bourbon';
+@import '../styles';
 
 #profile {
-  max-width: 26em;
-
   #player-record {
     > .container {
-      @include margin(1em);
-      @include padding(.4em);
-      text-align: center;
+      @extend .margin-lg-rl;
+      @extend .padded;
+      @extend .text-center;
       min-width: 3em;
     }
-  }
-
-  #block-user {
-    margin-right: 1em;
   }
 }
 </style>

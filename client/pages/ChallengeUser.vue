@@ -1,17 +1,16 @@
 <script>
 import useWalletStore from '../stores/wallet';
-import UserOpts from '../components/UserChallengeOpts';
+import ChallengeCard from '../components/ChallengeCard';
 import { isAddress, getAddress } from 'ethers/lib/utils';
 
 export default {
   name: 'ChallengeUser',
-  components: { UserOpts },
+  components: { ChallengeCard },
   data () {
     return {
       opponent: null,
       playAsWhite: true,
-      p1Wager: null,
-      p2Wager: null,
+      wagerAmount: 0,
       timePerMove: null
     }
   },
@@ -50,44 +49,73 @@ export default {
 
 <template>
   <div id='new-challenge'>
-    <div id='player-options' class='flex'>
-      <div id='current-player' class='flex-1 flex-center padded'>
-        <UserOpts
+    <div class='text-xl margin-tb'>New Challenge</div>
+
+    <div id='player-cards' class='flex'>
+      <div id='current-player' class='flex-1 flex-center'>
+        <ChallengeCard
+          class='flex-1'
           color='White'
           :address='truncAddress(whitePlayer)'
-          :wager='0'
-        >Play As</UserOpts>
+          :wager='wagerAmount'
+          token='eth'
+        >Play As</ChallengeCard>
       </div>
 
-      <div id='opponent' class='flex-1 flex-center padded'>
-        <UserOpts
+      <div class='margin-rl' />
+
+      <div id='opponent' class='flex-1 flex-center'>
+        <ChallengeCard
           class='flex-1'
           color='Black'
           :address='truncAddress(blackPlayer)'
-          :wager='0'
-        >Opponent</UserOpts>
+          :wager='wagerAmount'
+          token='eth'
+        >Opponent</ChallengeCard>
       </div>
     </div>
 
-    <div id='universal-options'>
-    </div>
-    <div id='time-per-move' class='flex margin-1em'>
-      <div class='flex-shrink center-align text-ml text-bold'>Time Per Move</div>
-      <input
-        class='margin-rl flex-1'
-        v-bind='timePerMove'
-        placeholder='Enter a number'
-      />
-      <select
-        id='tpm-units'
-        name='tpm-units'
-        class='flex-shrink'
-      >
-        <option value='minutes'>Minutes</option>
-        <option value='hours'>Hours</option>
-        <option value='days'>Days</option>
-        <option value='days'>Weeks</option>
-      </select>
+    <div id='universal-options' class='margin-tb'>
+      <div id='time-per-move' class='flex margin-tb'>
+        <div class='flex-shrink center-align text-ml text-bold'>Time Per Move</div>
+        <div class='flex-1 flex-end'>
+          <input
+            class='margin-rl flex-1'
+            v-bind='timePerMove'
+            placeholder='Enter a number'
+          />
+
+          <select
+            id='tpm-units'
+            name='tpm-units'
+            class='flex-shrink'
+          >
+            <option value='minutes'>Minutes</option>
+            <option value='hours'>Hours</option>
+            <option value='days'>Days</option>
+            <option value='days'>Weeks</option>
+          </select>
+        </div>
+      </div>
+
+      <div id='wager-info' class='flex margin-tb'>
+        <div class='flex-shrink center-align text-ml text-bold'>Wager</div>
+        <div class='flex-1 flex-end'>
+          <input
+            class='margin-rl flex-1'
+            v-model='wagerAmount'
+            placeholder='0.000'
+          />
+          <select
+            id='wager-token'
+            name='wager-token'
+            class='flex-shrink'
+          >
+            <option value='eth'>ETH</option>
+            <option value='dai' disabled>DAI</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div id='game-controls' class='flex flex-center'>
@@ -101,13 +129,20 @@ export default {
 </template>
 
 <style lang='scss'>
+@import '../styles';
+
 #new-challenge {
-  #current-player {}
-  #opponent {}
+  #current-player, #opponent {}
+
+  #universal-options {
+    @extend .margin-lg-tb;
+
+    input { max-width: 7em; }
+    select { min-width: 6em; }
+  }
+
   #game-controls {
-    button {
-      min-width: 5em;
-    }
+    button { min-width: 6em; }
   }
 }
 </style>

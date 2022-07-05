@@ -71,7 +71,7 @@ export default {
   <div id='app'>
     <div id='sidebar'>
       <div class='container bordered'>
-        <div id='header' class='font-smooth'>Blockchain Chess Lounge</div>
+        <div id='brand' class='font-smooth'>Blockchain Chess Lounge</div>
         <CryptoWallet
           id='wallet'
           class='bordered'
@@ -85,20 +85,20 @@ export default {
             :onClick='() => this.$router.push("/lobby")'
           >Lobby</ConnectWallet>
           <router-link tag='button' to='/ai'>Fun Play</router-link>
-          <router-link tag='button' to='/about'>About</router-link>
+          <router-link tag='button' to='/about'>Rules</router-link>
           <router-link tag='button' to='/settings'>Settings</router-link>
         </div>
       </div>
     </div>
 
-    <div id='page'>
-      <router-view />
+    <div id='page' class='flex'>
+      <router-view class='flex-1' />
     </div>
   </div>
 </template>
 
 <style lang='scss'>
-@import '~bourbon';
+@import 'styles';
 
 // Swallow the page
 html, body {
@@ -108,158 +108,45 @@ html, body {
   #app {
     max-width: 1024px;
     height: 95%;
-    @include margin(1em 1em);
+    @extend .margin-lg;
+    @extend .flex;
+
+    #sidebar {
+      @extend .flex-col;
+      flex-basis: 14em;
+
+      > .container {
+        @extend .padded;
+      }
+
+      #brand {
+        @extend .text-xl;
+        @extend .bold;
+        @extend .text-center;
+      }
+
+      #wallet {
+        @extend .margin-lg-tb;
+        @extend .margin-sm-rl;
+        @extend .pad-rl;
+        @extend .pad-sm-tb;
+      }
+
+      #navigation {
+        @extend .flex-col;
+
+        button {
+          @extend .margin-tb;
+          margin-right: 2em;
+          margin-left: 2em;
+        }
+      }
+    }
 
     #page {
-      max-width: 36em;
+      width: 28em;
+      margin-left: 1em;
     }
-  }
-}
-
-// Flexboxes
-#app {
-  display: flex;
-
-  #sidebar {
-    flex-basis: 14em;
-    display: flex;
-    flex-direction: column;
-
-    #navigation {
-      display: flex;
-      flex-direction: column;
-    }
-  }
-
-  #page {
-    flex: 1;
-  }
-
-  .flex {
-    display: flex;
-  }
-
-  .flex-col {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .flex-center {
-    display: flex;
-    justify-content: center;
-  }
-
-  .flex-end {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .flex-between {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .flex-around {
-    display: flex;
-    justify-content: space-around;
-  }
-
-  .center-align {
-    display: flex;
-    align-items: center;
-  }
-
-  .flex-1 { flex: 1; }
-  .flex-shrink { flex-shrink: 1; }
-  .flex-grow { flex-shrink: 1; }
-}
-
-// Margins and padding
-#app {
-  #sidebar {
-    > .container {
-      @include padding(.5em);
-    }
-
-    #wallet {
-      @include margin(1em .2em);
-      @include padding(.2em .4em);
-    }
-
-    button {
-      @include margin(.4em 2em);
-    }
-  }
-
-  #page {
-    @include margin(.4em 1em);
-  }
-
-  .padded {
-    @include padding(.4em);
-  }
-
-  .margin {
-    margin: .4em;
-  }
-
-  .margin-1em {
-    margin: 1em;
-  }
-
-  .margin-rl {
-    @include margin(0 .4em);
-  }
-
-  .margin-tb {
-    @include margin(.4em 0);
-  }
-}
-
-// Borders
-#app {
-  .bordered {
-    border-style: solid;
-    border-radius: 6px;
-    border-width: 3px;
-  }
-}
-
-// Fonts and text
-#app {
-  #header {
-    @extend .text-xl;
-    @extend .bold;
-    @extend .text-center;
-  }
-
-  .text-xl {
-    font-size: 28px;
-  }
-
-  .text-lg {
-    font-size: 24px;
-  }
-
-  // medium-large
-  .text-ml {
-    font-size: 20px;
-  }
-
-  .text-md {
-    font-size: 16px;
-  }
-
-  .bold {
-    font-weight: bold;
-  }
-
-  .text-center {
-    text-align: center;
-  }
-
-  .text-right {
-    text-align: right;
   }
 }
 

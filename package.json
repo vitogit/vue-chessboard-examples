@@ -5,15 +5,17 @@
   "author": "vitogit <vitogit@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
+    "blockchain": "ganache",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
+    "test": "truffle test",
     "deploy": "aws --profile hbpcb s3 sync --delete dist s3://blockchain-chess-lounge"
   },
   "dependencies": {
     "@vue/composition-api": "^1.7.0",
-    "bourbon": "^7.2.0",
     "core-js": "^3.6.4",
+    "ethers": "^5.6.9",
     "pinia": "^2.0.14",
     "vue": "^2.6.11",
     "vue-chessboard": "^0.6.6",

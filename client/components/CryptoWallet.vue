@@ -17,38 +17,17 @@ export default {
 
 <template>
   <div>
-    <div id='balances'>
-      <div class='container'>
-        <div class='coin'>ETH</div>
-        <div class='balance'>{{ formatBalance(ethBalance) }}</div>
+    <div id='balances' class='flex-col'>
+      <div class='flex center-align'>
+        <div class='flex-shrink text-lg'>ETH</div>
+        <div class='flex-1 text-ml flex-end'>{{ formatBalance(ethBalance) }}</div>
       </div>
-      <div class='container'>
-        <div class='coin'>DAI</div>
-        <div class='balance'>{{ formatBalance(daiBalance) }}</div>
+      <div class='flex center-align'>
+        <div class='flex-shrink text-lg'>DAI</div>
+        <div class='flex-1 text-ml flex-end'>
+          {{ formatBalance(daiBalance) }}
+        </div>
       </div>
     </div>
   </div>
 </template>
-
-<style lang='scss'>
-#balances {
-  * {
-    font-size: 24px;
-    font-weight: bold;
-  }
-
-  .container {
-    flex: 1;
-    display: flex;
-    .coin {
-      flex-shrink: 1;
-    }
-
-    .balance {
-      flex-grow: 1;
-      justify-content: flex-end;
-      text-align: right;
-    }
-  }
-}
-</style>

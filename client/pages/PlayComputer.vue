@@ -3,9 +3,7 @@ import AiBoard from '../components/AiBoard.vue';
 
 export default {
   name: 'PlayComputer',
-  components: {
-    AiBoard
-  },
+  components: { AiBoard },
   data () {
     return {
       currentFen: '',
@@ -25,6 +23,7 @@ export default {
 
 <template>
   <div id='play-ai'>
+    <div class='text-xl margin-tb'>Fun Play</div>
     <AiBoard id='board' @onMove='showInfo' />
   </div>
 </template>
