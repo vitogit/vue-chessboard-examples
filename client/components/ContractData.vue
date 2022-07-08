@@ -1,3 +1,9 @@
+<script>
+export default {
+  props: ['turn', 'history', 'fen']
+}
+</script>
+
 <template>
   <div>
     <div class='text-lg'>Contract Data</div>
@@ -18,9 +24,3 @@
     </div>
   </div>
 </template>
-
-<script>
-export default {
-  props: ['turn', 'history', 'fen']
-}
-</script>

@@ -5,8 +5,11 @@ import { createPinia, PiniaVuePlugin } from 'pinia';
 import App from './App.vue';
 
 import LobbyPage from './pages/UserLobby';
-import ProfilePage from './pages/UserProfile';
+import ProfilePage from './pages/PlayerProfile';
+//import UserProfile from './pages/UserProfile';
 import ChallengePage from './pages/ChallengeUser';
+import PendingChallenge from './pages/PendingChallenge';
+import ModifyChallenge from './pages/ModifyChallenge';
 import AboutPage from './pages/AboutPage';
 import PlayAiPage from './pages/PlayComputer';
 import SettingsPage from './pages/SettingsPage';
@@ -22,10 +25,12 @@ window.vm = new Vue({
   router: new VueRouter({
     routes: [
       { path: '/', redirect: '/ai' },
-      { path: '/lobby', component: LobbyPage },
-      { path: '/profile/:address', component: ProfilePage },
-      { path: '/challenge/:address', component: ChallengePage },
       { path: '/ai', component: PlayAiPage },
+      { path: '/lobby', component: LobbyPage },
+      { path: '/profile/:player', component: ProfilePage },
+      { path: '/new-challenge/:player', component: ChallengePage },
+      { path: '/challenge/:contract', component: PendingChallenge },
+      { path: '/modify/:contract', component: ModifyChallenge },
       { path: '/about', component: AboutPage },
       { path: '/settings', component: SettingsPage },
     ]

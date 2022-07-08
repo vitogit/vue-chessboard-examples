@@ -1,0 +1,59 @@
+// Regular padding
+.pad, .padded {
+  padding: .4em;
+}
+
+.pad-rl {
+  padding-right: .4em;
+  padding-left: .4em;
+}
+
+.pad-tb {
+  padding-top: .4em;
+  padding-bottom: .4em;
+}
+
+// XLarge padding
+.pad-xl {
+  padding: 2em;
+}
+
+.pad-xl-rl {
+  padding-right: 2em;
+  padding-left: 2em;
+}
+
+.pad-xl-tb {
+  padding-top: 2em;
+  padding-bottom: 2em;
+}
+
+// Large padding
+.pad-lg {
+  padding: 1em;
+}
+
+.pad-lg-rl {
+  padding-right: 1em;
+  padding-left: 1em;
+}
+
+.pad-lg-tb {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+// Small padding
+.pad-sm {
+  padding: .2em;
+}
+
+.pad-sm-rl {
+  padding-right: .2em;
+  padding-left: .2em;
+}
+
+.pad-sm-tb {
+  padding-top: .2em;
+  padding-bottom: .2em;
+}

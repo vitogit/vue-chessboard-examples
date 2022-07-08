@@ -6,9 +6,8 @@ export default defineStore({
     installed: false,
     connected: false,
     address: null,
-    signer: null,
-    provider: null,
-    ethBalance: 0,
-    daiBalance: 0
+    balance: 0,
+    // format (ticker, balance)
+    //tokens: [],
   })
 });

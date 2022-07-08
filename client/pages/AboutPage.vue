@@ -1,5 +1,5 @@
 <template>
-  <div id='about'>
+  <div id='rules'>
     <div class='text-xl margin-tb'>Rules</div>
 
     <div class='summary'>
@@ -25,7 +25,7 @@
 </template>
 
 <style lang='scss'>
-#about {
+#rules {
   width: 32em;
 
   #rules {

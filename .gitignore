@@ -11,10 +11,12 @@ contracts/Game.sol
 test/game.js
 migrations/
 client/assets/
-client/styles/
+client/contracts
+addresses
 
 # local env files
 .mnemonic
+.env
 .env.local
 .env.*.local
 

@@ -1,16 +1,17 @@
 <script>
 import { isAddress, getAddress } from 'ethers/lib/utils';
+import challengeMixin from '../mixins/challenges';
 
 export default {
   name: 'UserLobby',
+  mixins: [ challengeMixin ],
   data () {
     return {
       query: null
     }
   },
   methods: {
-    async searchPlayer() {
-      console.log('query', this.query);
+    async search() {
       if (isAddress(this.query)) {
         this.$router.push('/profile/'+getAddress(this.query));
       } else {
@@ -38,12 +39,30 @@ export default {
       <button
         class='margin-rl'
         :disabled='!isValidAddress'
-        @click='searchPlayer'
+        @click='search'
       >Go</button>
     </div>
 
-    <div id='open-challenges'>
+    <div id='pending-challenges'>
       <div class='text-lg margin-lg-tb'>Pending Challenges</div>
+      <router-link
+        v-for='c in challenges.pending'
+        :key='`pending-${c}`'
+        :to='"/challenge/"+c'
+      >
+        {{ c }}
+      </router-link>
+    </div>
+
+    <div id='waiting-challenges'>
+      <div class='text-lg margin-lg-tb'>Awaiting Response</div>
+      <router-link
+        v-for='(c, i) in challenges.waiting'
+        :key='`waiting-${c}`'
+        :to='"/challenge/"+c'
+      >
+        {{ c }}
+      </router-link>
     </div>
 
     <div id='open-games'>

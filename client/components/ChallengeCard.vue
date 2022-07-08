@@ -1,7 +1,10 @@
 <script>
+import ethMixin from '../mixins/ethereum';
+
 export default {
   name: 'UserChallengeOptions',
-  props: [ 'color', 'address', 'wager', 'token' ]
+  props: [ 'color', 'address', 'balance', 'token' ],
+  mixins: [ ethMixin ]
 }
 </script>
 
@@ -12,18 +15,18 @@ export default {
     </div>
 
     <div id='player-color' class='pad text-center'>
-      <div class='bold text-ml'>{{ color }}</div>
+      <div class='bold text-ml text-sentance'>{{ color }}</div>
       <div class='text-md'>{{ address }}</div>
     </div>
 
     <div class='margin-sm-tb flex'>
-      <div class='pad center-align text-ml'>Wager</div>
+      <div class='pad center-align text-md'>Balance</div>
 
       <div class='flex-1 flex-end center-align'>
-        <div class='text-ml'>
-          {{ parseFloat(wager).toFixed(3) }}
+        <div class='text-md'>
+          {{ formatBalance(balance) }}
         </div>
-        <div class='text-ml margin-rl'>
+        <div class='text-md margin-rl'>
           {{ token.toUpperCase() }}
         </div>
       </div>

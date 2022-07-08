@@ -1,0 +1,30 @@
+.border {
+  border-style: solid;
+}
+
+.border-bottom {
+  border-bottom-style: solid;
+}
+
+.border-lg {
+  border-width: 5px;
+}
+
+.border-md {
+  border-width: 3px;
+}
+
+.border-sm {
+  border-width: 1px;
+}
+
+.border-round {
+  border-radius: 6px;
+}
+
+.bordered {
+  @extend .border;
+  @extend .border-round;
+  @extend .border-md;
+}
+

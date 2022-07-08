@@ -1,23 +1,19 @@
 <script>
+import ethMixin from '../mixins/ethereum';
+import walletMixin from '../mixins/wallet';
+import useWalletStore from '../stores/wallet';
+
 export default {
-  name: 'UserProfile',
+  name: 'PlayerProfile',
+  mixins: [ ethMixin, walletMixin ],
   data() {
     return {
-      address: null
+      player: null
     };
   },
-  computed: {
-    truncdAddr() {
-      if (this.address.match(/0x[a-fA-F0-9]{40}/) != null) {
-        return `${this.address.substring(0, 6)}...${this.address.substring(38)}`
-      } else {
-        return this.address;
-      }
-    }
-  },
   created() {
-    let { address } = this.$route.params;
-    this.address = address;
+    let { player } = this.$route.params;
+    this.player = player;
   }
 }
 </script>
@@ -47,13 +43,13 @@ export default {
 
     <div id='player-info' class='flex center-align margin-lg'>
       <div class='flex-1 text-ml'>Address</div>
-      <div class='flex-1 flex-end text-md'>{{ truncdAddr }}</div>
+      <div class='flex-1 flex-end text-md'>{{ truncAddress(player) }}</div>
     </div>
 
     <div id='actions' class='flex margin-lg'>
       <div class='flex-1 flex-start'>
         <button
-          @click='$router.push("/challenge/"+address)'
+          @click='$router.push("/new-challenge/"+player)'
         >Challenge</button>
       </div>
       <div id='block-controls' class='flex-1 flex-end'>

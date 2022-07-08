@@ -1,48 +1,51 @@
 <script>
-import useWalletStore from '../stores/wallet';
 import ChallengeCard from '../components/ChallengeCard';
-import { isAddress, getAddress } from 'ethers/lib/utils';
+
+import ethMixin from '../mixins/ethereum';
+import walletMixin from '../mixins/wallet';
+import contractsMixin from '../mixins/contracts';
+import challengeMixin from '../mixins/challenges';
 
 export default {
   name: 'ChallengeUser',
+  mixins: [ ethMixin, walletMixin, contractsMixin, challengeMixin],
   components: { ChallengeCard },
   data () {
     return {
-      opponent: null,
-      playAsWhite: true,
+      waiting: false,
       wagerAmount: 0,
-      timePerMove: null
+      timePerMove: 15,
     }
   },
   methods: {
-    truncAddress(addr) {
-      if (addr == null) return;
-      // Ethereum Addresses
-      if (addr.match(/0x[a-fA-F0-9]{40}/) != null) {
-        return `${addr.substring(0, 6)}...${addr.substring(38)}`
-      } else {
-        // ENS domains and such
-        return addr;
-      }
-    }
-  },
-  computed: {
-    whitePlayer() {
-      return this.playAsWhite ? this.wallet.address
-                              : this.opponent;
+    async initChallenge(opponent) {
+      this.player1 = this.address;
+      this.player2 = opponent;
+      await this.refreshPlayerBalances();
     },
-    blackPlayer() {
-      return this.playAsWhite ? this.opponent
-                              : this.wallet.address;
+    async send() {
+      await this.lobby.challenge(this.opponent
+                               , this.p1sWhite
+                               , this.wagerAmount
+                               , this.timePerMove)
+                      .then(tx => tx.wait);
+      this.waiting = true;
+      // Wait for 30 seconds and refresh page if no event is received
+      let timer = setTimeout(this.$router.go, 30000);
+
+      // Listen for a new challenge and redirect
+      const eventFilter = this.lobby.filters.NewContract(this.wallet.address, this.opponent);
+      this.lobby.once(eventFilter, (p1, p2, contract) => {
+          console.log('Issued challenge', contract);
+          this.waiting = false; clearTimeout(timer);
+          this.challenges.register(p1, p2, contract);
+          this.$router.push('/challenge/'+contract);
+      });
     }
-  },
-  setup() {
-    const wallet = useWalletStore();
-    return { wallet };
   },
   created() {
-    let { address } = this.$route.params;
-    this.opponent = address;
+    const { player } = this.$route.params;
+    this.initChallenge(player);
   }
 }
 </script>
@@ -55,9 +58,9 @@ export default {
       <div id='current-player' class='flex-1 flex-center'>
         <ChallengeCard
           class='flex-1'
-          color='White'
-          :address='truncAddress(whitePlayer)'
-          :wager='wagerAmount'
+          :color='startingColor'
+          :address='truncAddress(address)'
+          :balance='balance'
           token='eth'
         >Play As</ChallengeCard>
       </div>
@@ -67,34 +70,22 @@ export default {
       <div id='opponent' class='flex-1 flex-center'>
         <ChallengeCard
           class='flex-1'
-          color='Black'
-          :address='truncAddress(blackPlayer)'
-          :wager='wagerAmount'
+          :color='opponentColor'
+          :address='truncAddress(opponent)'
+          :balance='opponentBalance'
           token='eth'
         >Opponent</ChallengeCard>
       </div>
     </div>
 
-    <div id='universal-options' class='margin-tb'>
-      <div id='time-per-move' class='flex margin-tb'>
-        <div class='flex-shrink center-align text-ml text-bold'>Time Per Move</div>
+    <div id='universal-options' class='margin-lg-tb'>
+      <div id='' class='flex margin-tb'>
+        <div class='flex-shrink center-align text-ml text-bold'>Play As</div>
         <div class='flex-1 flex-end'>
-          <input
-            class='margin-rl flex-1'
-            v-bind='timePerMove'
-            placeholder='Enter a number'
-          />
-
-          <select
-            id='tpm-units'
-            name='tpm-units'
-            class='flex-shrink'
-          >
-            <option value='minutes'>Minutes</option>
-            <option value='hours'>Hours</option>
-            <option value='days'>Days</option>
-            <option value='days'>Weeks</option>
-          </select>
+          <input id='choose-white' type='radio' :value='true' v-model='p1IsWhite' />
+          <label for='choose-white'>White</label>
+          <input id='choose-black' type='radio' :value='false' v-model='p1IsWhite' />
+          <label for='choose-black'>Black</label>
         </div>
       </div>
 
@@ -113,16 +104,45 @@ export default {
           >
             <option value='eth'>ETH</option>
             <option value='dai' disabled>DAI</option>
+            <option value='usdc' disabled>USDC</option>
+            <option value='usdt' disabled>USDT</option>
+          </select>
+        </div>
+      </div>
+
+      <div id='time-per-move' class='flex margin-tb'>
+        <div class='flex-shrink center-align text-ml text-bold'>Time Per Move</div>
+        <div class='flex-1 flex-end'>
+          <input
+            class='margin-rl flex-1'
+            v-model='timePerMove'
+            placeholder='Enter a number'
+          />
+
+          <select
+            id='tpm-units'
+            name='tpm-units'
+            class='flex-shrink'
+          >
+            <option value='minutes'>Minutes</option>
+            <option value='hours' disabled>Hours</option>
+            <option value='days' disabled>Days</option>
+            <option value='days' disabled>Weeks</option>
           </select>
         </div>
       </div>
     </div>
 
     <div id='game-controls' class='flex flex-center'>
-      <button class='margin-rl'>Send</button>
+      <button
+        class='margin-rl'
+        @click='send'
+        :disabled='!waiting'
+      >Send</button>
       <button
         class='margin-rl'
         @click='$router.push("/profile/"+opponent)'
+        :disabled='!waiting'
       >Cancel</button>
     </div>
   </div>
@@ -139,6 +159,12 @@ export default {
 
     input { max-width: 7em; }
     select { min-width: 6em; }
+
+    #choose-white, #choose-black {
+      margin-right: .4em;
+      margin-left: 1em;
+      color: black;
+    }
   }
 
   #game-controls {
