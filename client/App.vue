@@ -123,7 +123,7 @@ export default {
             :isConnected='wallet.connected'
             :onConnect='this.connectWallet'
             :onClick='() => this.$router.push("/lobby")'
-          >Lobby</ConnectWallet>
+          >Lounge</ConnectWallet>
           <router-link tag='button' to='/ai'>Fun Play</router-link>
           <router-link tag='button' to='/about'>Rules</router-link>
           <router-link tag='button' to='/settings'>Settings</router-link>
@@ -157,13 +157,13 @@ html, body {
 
       > .container {
         @extend .padded;
+        @extend .pad-lg-tb;
       }
 
       #brand {
         @extend .bold;
         @extend .text-xl;
         @extend .text-center;
-        @extend .margin-tb;
       }
 
       #wallet {

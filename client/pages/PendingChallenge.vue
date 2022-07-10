@@ -23,45 +23,51 @@ export default {
   methods: {
     async accept() {
       console.log('Accepted challenge');
+      await this.challenge.accept();
+
+      //this.waiting = true;
       const eventFilter = this.challenge.filters.Modified(this.address, this.opponent);
-      const timer = setTimeout(this.$router.go, 30000);
+      //const timer = setTimeout(this.$router.go, 30000);
       this.challenge.once(eventFilter, (p1, p2, state) => {
         console.log('Challenge accepted', this.challenge.address);
         // FIXME: Better to scrape the logs after a timeout and redirect
-        this.waiting = false; clearTimeout(timer);
+        //this.waiting = false; clearTimeout(timer);
         this.challenges.terminate(this.challenge.address, state);
+      });
+
+      const gameFilter = this.challenge.filters.NewContract(this.whitePlayer, this.blackPlayer);
+      this.challenge.once(gameFilter, async (p1, p2, target) => {
+        console.log('New game created', target);
         this.$router.push('/game/'+contract);
       });
-      await this.challenge.accept();
-      this.waiting = true;
     },
     async decline() {
       console.log('Declined challenge');
+      await this.challenge.reject();
+      //this.waiting = true;
       const eventFilter = this.challenge.filters.Modified(this.address, this.opponent);
-      const timer = setTimeout(this.$router.go, 30000);
+      //const timer = setTimeout(this.$router.go, 30000);
       this.challenge.once(eventFilter, (p1, p2, state) => {
         console.log('Challenge declined', this.challenge.address);
         // FIXME: Better to scrape the logs after a timeout and redirect
-        this.waiting = false; clearTimeout(timer);
+        //this.waiting = false; clearTimeout(timer);
         this.challenges.terminate(this.challenge.address, state);
         this.$router.push('/lobby');
       });
-      await this.challenge.reject();
-      this.waiting = true;
     },
     async cancel() {
       console.log('Canceled challenge');
+      await this.challenge.cancel();
+      //this.waiting = true;
       const eventFilter = this.challenge.filters.Modified(this.address, this.opponent);
-      const timer = setTimeout(this.$router.go, 30000);
+      //const timer = setTimeout(this.$router.go, 30000);
       this.challenge.once(eventFilter, (p1, p2, state) => {
         console.log('Challenge canceled', this.challenge.address);
         // FIXME: Better to scrape the logs after a timeout and redirect
-        this.waiting = false; clearTimeout(timer);
+        //this.waiting = false; clearTimeout(timer);
         this.challenges.terminate(this.challenge.address, state);
         this.$router.push('/lobby');
       });
-      await this.challenge.cancel();
-      this.waiting = true;
     }
   },
   created() {
@@ -73,7 +79,8 @@ export default {
 
 <template>
   <div id='pending-challenge'>
-    <div class='text-xl margin-tb'>Challenge</div>
+    <div v-if='challengeStatus === 0' class='text-xl margin-tb'>Pending Challenge</div>
+    <div v-else class='text-xl margin-tb'>Challenge</div>
 
     <div v-if='challengeLoaded' id='player-cards' class='flex'>
       <div id='current-player' class='flex-1 flex-center'>
@@ -132,7 +139,7 @@ export default {
         <button
           class='margin-rl'
           @click='$router.push("/modify/"+challenge.address)'
-          disabled
+          :disabled='!isPending || waiting'
         >Modify</button>
       </div>
 

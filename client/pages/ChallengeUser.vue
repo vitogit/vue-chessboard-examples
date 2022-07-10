@@ -24,22 +24,24 @@ export default {
       await this.refreshPlayerBalances();
     },
     async send() {
+      console.log('Sending challenge to', this.opponent);
       await this.lobby.challenge(this.opponent
-                               , this.p1sWhite
+                               , this.p1IsWhite
                                , this.wagerAmount
                                , this.timePerMove)
                       .then(tx => tx.wait);
       this.waiting = true;
       // Wait for 30 seconds and refresh page if no event is received
-      let timer = setTimeout(this.$router.go, 30000);
+      //let timer = setTimeout(this.$router.go, 30000);
 
       // Listen for a new challenge and redirect
       const eventFilter = this.lobby.filters.NewContract(this.wallet.address, this.opponent);
       this.lobby.once(eventFilter, (p1, p2, contract) => {
           console.log('Issued challenge', contract);
-          this.waiting = false; clearTimeout(timer);
+          //clearTimeout(timer);
           this.challenges.register(p1, p2, contract);
           this.$router.push('/challenge/'+contract);
+          this.waiting = false;
       });
     }
   },
@@ -137,12 +139,12 @@ export default {
       <button
         class='margin-rl'
         @click='send'
-        :disabled='!waiting'
+        :disabled='waiting'
       >Send</button>
       <button
         class='margin-rl'
         @click='$router.push("/profile/"+opponent)'
-        :disabled='!waiting'
+        :disabled='waiting'
       >Cancel</button>
     </div>
   </div>

@@ -49,6 +49,8 @@ export default ({
     opponent() { return this.isPlayer2 ? this.player1 : this.player2 },
     startingColor() { return this.isPlayer2 ? this.p2Color : this.p1Color },
     opponentColor() { return this.isPlayer1 ? this.p2Color : this.p1Color },
+    whitePlayer() { return this.startingColor == 'white' ? this.address : this.opponent },
+    blackPlayer() { return this.startingColor == 'black' ? this.address : this.opponent },
     currentBalance() { return this.isPlayer2 ? this.p2Balance : this.p1Balance },
     opponentBalance() { return this.isPlayer2 ? this.p1Balance : this.p2Balance }
   },
