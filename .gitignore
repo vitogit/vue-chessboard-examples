@@ -7,8 +7,8 @@ cache/
 
 # Temporary excludes
 # Smart contracts for now
-contracts/Game.sol
-test/game.js
+contracts/*Game.sol
+test/*game.js
 migrations/
 client/assets/
 client/contracts
