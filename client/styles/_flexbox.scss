@@ -1,9 +1,9 @@
-.flex {
+.flex, .flex-row {
   display: flex;
   flex-direction: row;
 }
 
-.flex-col {
+.flex-col, .flex-column, .flex-down {
   display: flex;
   flex-direction: column;
 }
@@ -33,11 +33,22 @@
   align-items: center;
 }
 
-.align-bottom {
+.align-bottom, .align-end {
   display: flex;
   align-items: flex-end;
 }
 
+.justify-center {
+  display: flex;
+  justify-content: center;
+}
+
+.justify-bottom, .justify-end {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
 .flex-shrink { flex-shrink: 1; }
-.flex-grow { flex-shrink: 1; }
+.flex-grow { flex-grow: 1; }

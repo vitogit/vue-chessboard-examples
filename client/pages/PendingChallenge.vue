@@ -20,53 +20,51 @@ export default {
       waiting: false
     };
   },
+  computed: {
+    disableControls() { return this.waiting || !this.challengeLoaded || !this.statusPending }
+  },
   methods: {
     async accept() {
       console.log('Accepted challenge');
       await this.challenge.accept();
-
-      //this.waiting = true;
-      const eventFilter = this.challenge.filters.Modified(this.address, this.opponent);
-      //const timer = setTimeout(this.$router.go, 30000);
+      this.waiting = true;
+      const eventFilter = this.challenge.filters.StateChanged(this.address, this.opponent);
       this.challenge.once(eventFilter, (p1, p2, state) => {
         console.log('Challenge accepted', this.challenge.address);
-        // FIXME: Better to scrape the logs after a timeout and redirect
-        //this.waiting = false; clearTimeout(timer);
-        this.challenges.terminate(this.challenge.address, state);
+        this.lobby.terminate(this.challenge.address);
+        this.waiting = false;
       });
 
       const gameFilter = this.challenge.filters.NewContract(this.whitePlayer, this.blackPlayer);
-      this.challenge.once(gameFilter, async (p1, p2, target) => {
-        console.log('New game created', target);
-        this.$router.push('/game/'+contract);
+      this.challenge.once(gameFilter, async (p1, p2, address) => {
+        console.log('New game created', address);
+        this.lobby.newGame(address, p1, p2);
+        this.$router.push('/game/'+address);
       });
     },
     async decline() {
       console.log('Declined challenge');
-      await this.challenge.reject();
-      //this.waiting = true;
-      const eventFilter = this.challenge.filters.Modified(this.address, this.opponent);
-      //const timer = setTimeout(this.$router.go, 30000);
+      await this.challenge.decline();
+      this.waiting = true;
+      const eventFilter = this.challenge.filters.StateChanged(this.address, this.opponent);
       this.challenge.once(eventFilter, (p1, p2, state) => {
         console.log('Challenge declined', this.challenge.address);
-        // FIXME: Better to scrape the logs after a timeout and redirect
-        //this.waiting = false; clearTimeout(timer);
-        this.challenges.terminate(this.challenge.address, state);
-        this.$router.push('/lobby');
+        this.lobby.terminate(this.challenge.address);
+        this.waiting = false;
+        this.initChallenge(this.challenge.address);
+        //this.$router.go();
       });
     },
     async cancel() {
       console.log('Canceled challenge');
       await this.challenge.cancel();
-      //this.waiting = true;
-      const eventFilter = this.challenge.filters.Modified(this.address, this.opponent);
-      //const timer = setTimeout(this.$router.go, 30000);
+      this.waiting = true;
+      const eventFilter = this.challenge.filters.StateChanged(this.address, this.opponent);
       this.challenge.once(eventFilter, (p1, p2, state) => {
         console.log('Challenge canceled', this.challenge.address);
-        // FIXME: Better to scrape the logs after a timeout and redirect
-        //this.waiting = false; clearTimeout(timer);
-        this.challenges.terminate(this.challenge.address, state);
-        this.$router.push('/lobby');
+        this.lobby.terminate(this.challenge.address);
+        this.waiting = false;
+        this.initChallenge(this.challenge.address);
       });
     }
   },
@@ -78,7 +76,7 @@ export default {
 </script>
 
 <template>
-  <div id='pending-challenge'>
+  <div v-if='challengeLoaded' id='pending-challenge'>
     <div v-if='challengeStatus === 0' class='text-xl margin-tb'>Pending Challenge</div>
     <div v-else class='text-xl margin-tb'>Challenge</div>
 
@@ -112,19 +110,19 @@ export default {
         </div>
       </div>
 
-      <div id='time-per-move' class='flex margin-tb'>
-        <div class='flex-shrink center-align text-ml text-bold'>Time Per Move</div>
-        <div class='flex-1 flex-end center-align'>
-          <div class='margin-rl'>{{ timePerMove }}</div>
-          <div>Minutes</div>
-        </div>
-      </div>
-
       <div id='wager-info' class='flex margin-tb'>
         <div class='flex-shrink center-align text-ml text-bold'>Wager</div>
         <div class='flex-1 flex-end center-align'>
           <div class='margin-rl'>{{ wagerAmount }}</div>
           <div>ETH</div>
+        </div>
+      </div>
+
+      <div id='time-per-move' class='flex margin-tb'>
+        <div class='flex-shrink center-align text-ml text-bold'>Time Per Move</div>
+        <div class='flex-1 flex-end center-align'>
+          <div class='margin-rl'>{{ timePerMove }}</div>
+          <div>Minutes</div>
         </div>
       </div>
     </div>
@@ -134,12 +132,12 @@ export default {
         <button
           class='margin-rl'
           @click='cancel'
-          :disabled='!isPending || waiting'
+          :disabled='disableControls'
         >Cancel</button>
         <button
           class='margin-rl'
           @click='$router.push("/modify/"+challenge.address)'
-          :disabled='!isPending || waiting'
+          :disabled='disableControls'
         >Modify</button>
       </div>
 
@@ -147,17 +145,17 @@ export default {
         <button
           class='margin-rl'
           @click='accept'
-          :disabled='!isPending || waiting'
+          :disabled='disableControls'
         >Accept</button>
         <button
           class='margin-rl'
           @click='decline'
-          :disabled='!isPending || waiting'
+          :disabled='disableControls'
         >Decline</button>
         <button
           class='margin-rl'
           @click='$router.push("/modify/"+challenge.address)'
-          :disabled='!isPending || waiting'
+          :disabled='disableControls'
         >Modify</button>
       </div>
     </div>

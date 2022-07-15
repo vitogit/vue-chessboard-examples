@@ -2547,10 +2547,20 @@ chess.js@^0.10.2:
   resolved "https://registry.npmjs.org/chess.js/-/chess.js-0.10.3.tgz"
   integrity sha512-i51JgVM0ksFMbLJYKoDpfrcFxJHq/XQQx8NltCdfMyDv7vpU5JVzsZz1EOw7nA27eGA5t8tSxodAN+Wc704BoQ==
 
+chess.js@^0.13.3:
+  version "0.13.3"
+  resolved "https://registry.yarnpkg.com/chess.js/-/chess.js-0.13.3.tgz#fae842c87be679e78cfcf2d5f7b8991ad7028caa"
+  integrity sha512-qQnWyoMYvi9nzF7RgtKgqMyS+OhlbCcc2KbWKs1Vo1/r0aKvJfqeFhRUukp7CD3yZhtttt5k0pPjkkbi9ZXxhg==
+
 chessground@^7.2.10:
   version "7.12.0"
   resolved "https://registry.npmjs.org/chessground/-/chessground-7.12.0.tgz"
   integrity sha512-MQG7c4Hsy1dCkMFFv4LTaRauVSmWF8/dukion1qLCh5pIcKyoa5onbmbglAdDXOYhBbAZVf1F289wy0DeDEBJQ==
+
+chessground@^8.2.1:
+  version "8.2.1"
+  resolved "https://registry.yarnpkg.com/chessground/-/chessground-8.2.1.tgz#0cb686c0c88f78cc18b931ae3564e3d571156ca7"
+  integrity sha512-cM79y/kC0yI+S89XN6q7CXROi/YSrU3yPTEisNJNbXMuNoqfg6cmk9/9ulCXDR6U+bnVSsrgtorgoP9PGlZTuQ==
 
 chokidar@^3.5.3:
   version "3.5.3"

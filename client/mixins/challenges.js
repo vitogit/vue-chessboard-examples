@@ -6,13 +6,15 @@ import { challengeStatus } from '../constants/bcl';
 import ethMixin from './ethereum';
 import walletMixin from './wallet';
 
-import useChallengeStore from '../stores/challenges';
+import useContractStore from '../stores/contracts';
+import useLobbyStore from '../stores/lobby';
 
 export default ({
   mixins: [ ethMixin, walletMixin ],
   setup() {
-    const challenges = useChallengeStore();
-    return { challenges };
+    const lobby = useLobbyStore();
+    const contracts = useContractStore();
+    return { lobby, contracts };
   },
   data() {
     return {
@@ -31,7 +33,6 @@ export default ({
     }
   },
   computed: {
-    isPending() { return this.challengeStatus === challengeStatus.pending },
     isSender() { return this.address === this.sender },
     isReceiver() { return this.address === this.receiver },
     isPlayer() {
@@ -45,6 +46,7 @@ export default ({
     // NOTE The order of these is chosen so that it will default to
     //      the current player defaults to player 1 is no account is
     //      authenticated
+    statusPending() { return this.challengeStatus === challengeStatus.pending },
     currentPlayer() { return this.isPlayer2 ? this.player2 : this.player1 },
     opponent() { return this.isPlayer2 ? this.player1 : this.player2 },
     startingColor() { return this.isPlayer2 ? this.p2Color : this.p1Color },
@@ -56,16 +58,8 @@ export default ({
   },
   methods: {
     async initChallenge(address) {
-      console.log('Initialize challenge contract', address);
-      this.challenge = new Contract(address
-                                  , ChallengeContract.abi
-                                  , this.signer || this.provider);
-      /* FIXME: Only do this if you're one of the players
-                                  , this.provider);
-      if (this.signer) {
-        this.challenge.connect(this.signer);
-      }
-      */
+      console.log('Initialize challenge contract data', address);
+      this.challenge = this.contracts.challenge(address);
 
       let proposal;
       [ this.player1,

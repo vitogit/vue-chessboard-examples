@@ -4,3 +4,16 @@ export const challengeStatus = {
   declined: 2,
   cancelled: 3
 };
+
+export const gameStatus = {
+  started: 0,
+  finished: 1,
+  paused: 2,
+  review: 3
+};
+
+export const gameResult = {
+  stalemate: 0,
+  whiteWon: 1,
+  blackWon: 2
+};

@@ -3,17 +3,19 @@
   "description": "A peer to peer chess application which settles on the blockchain",
   "version": "1.1.0",
   "author": "vitogit <vitogit@users.noreply.github.com>",
-  "license": "MIT",
+  "license": "GPLv3",
   "scripts": {
     "blockchain": "ganache",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "test": "truffle test",
+    "test": "truffle test --network test",
     "deploy": "aws --profile hbpcb s3 sync --delete dist s3://blockchain-chess-lounge"
   },
   "dependencies": {
     "@vue/composition-api": "^1.7.0",
+    "chess.js": "^0.13.3",
+    "chessground": "^8.2.1",
     "core-js": "^3.6.4",
     "ethers": "^5.6.9",
     "pinia": "^2.0.14",

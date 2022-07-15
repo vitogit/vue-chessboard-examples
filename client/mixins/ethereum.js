@@ -1,15 +1,6 @@
-import { formatEther } from 'ethers/lib/utils';
-import useEthStore from '../stores/ethereum';
+import { formatEther, parseEther } from 'ethers/lib/utils';
 
 export default ({
-  setup() {
-    const eth = useEthStore();
-    return { eth };
-  },
-  computed: {
-    provider() { return this.eth.provider },
-    signer() { return this.eth.signer }
-  },
   methods: {
     truncAddress(addr) {
       // Ethereum Addresses
@@ -23,6 +14,9 @@ export default ({
     async fetchBalance(addr) {
       const balance = await this.provider.getBalance(addr);
       return balance;
+    },
+    createBalance(amount) {
+      return parseEther(amount.toString());
     },
     formatBalance(amount) {
       return parseFloat(formatEther(amount)).toFixed(3);

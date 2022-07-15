@@ -10,6 +10,7 @@ import ProfilePage from './pages/PlayerProfile';
 import ChallengePage from './pages/ChallengeUser';
 import PendingChallenge from './pages/PendingChallenge';
 import ModifyChallenge from './pages/ModifyChallenge';
+import ChessGame from './pages/ChessGame';
 import AboutPage from './pages/AboutPage';
 import PlayAiPage from './pages/PlayComputer';
 import SettingsPage from './pages/SettingsPage';
@@ -31,6 +32,7 @@ window.vm = new Vue({
       { path: '/new-challenge/:player', component: ChallengePage },
       { path: '/challenge/:contract', component: PendingChallenge },
       { path: '/modify/:contract', component: ModifyChallenge },
+      { path: '/game/:contract', component: ChessGame },
       { path: '/about', component: AboutPage },
       { path: '/settings', component: SettingsPage },
     ]

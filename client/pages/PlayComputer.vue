@@ -23,7 +23,7 @@ export default {
 
 <template>
   <div id='play-ai'>
-    <div class='text-xl margin-tb'>Fun Play</div>
+    <div class='text-xl margin-tb'>Play Computer</div>
     <AiBoard id='board' @onMove='showInfo' />
   </div>
 </template>

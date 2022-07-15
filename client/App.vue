@@ -1,7 +1,9 @@
 <script>
 import _ from 'underscore';
 import { ethers, Contract } from 'ethers';
-import { formatEther } from 'ethers/lib/utils';
+import { isAddress } from 'ethers/lib/utils';
+
+import { challengeStatus, gameStatus } from './constants/bcl';
 
 import LobbyContract from './contracts/Lobby';
 import ChallengeContract from './contracts/Challenge';
@@ -24,6 +26,9 @@ export default {
       loading: true
     }
   },
+  computed: {
+    lobbyAddress() { return process.env.VUE_APP_LOBBY_ADDR }
+  },
   methods: {
     async init() {
       // Check whether a wallet is installed
@@ -31,57 +36,98 @@ export default {
         console.error('Metamask is NOT installed!');
         this.wallet.installed = false;
         return;
-      } else {
-        console.log('Metamask is installed!');
-        this.wallet.installed = true;
       }
+      console.log('Metamask is installed!');
+      this.wallet.installed = true;
 
       // Setup wallet connection
-      this.eth.provider = new Web3Provider(window.ethereum);
+      this.wallet.provider = new Web3Provider(window.ethereum);
       const accounts = await this.provider.listAccounts();
-      if (accounts.length > 0) {
-        this.eth.signer = this.provider.getSigner();
-        // TODO Is BigInt the correct way to store this?
-        [ this.wallet.address
-        , this.wallet.balance ] = await Promise.all([
-          this.signer.getAddress(),
-          this.signer.getBalance().then(BigInt)
-        ]);
-        this.wallet.connected = true;
-        console.log('Address', this.address);
-        console.log('Balance', this.balance);
-        console.log('Connected!');
+      if (accounts.length == 0) {
+        console.log('Wallet is NOT connected');
+        return;
       }
+      this.wallet.signer = this.provider.getSigner();
+      // TODO Is BigInt the correct way to store this?
+      [ this.wallet.address
+      , this.wallet.balance ] = await Promise.all([
+        this.signer.getAddress(),
+        this.signer.getBalance().then(BigInt)
+      ]);
+      console.log('Connected!');
+      this.wallet.connected = true;
+      console.log('Address', this.address);
+      console.log('Balance', this.formatBalance(this.balance), 'ETH');
 
       // Try to initialize with the signer, else use provider
       // NOTE Would be better to only connect wallet if the
       //      signer is one of the players
-      this.contracts.lobby = new Contract(
-          process.env.VUE_APP_LOBBY_ADDR
-        , LobbyContract.abi
-        , this.signer || this.provider);
-      const logs = await this.queryEventLogs(this.lobby
-                                , this.lobby.filters.NewContract);
-      await Promise.all(_.map(logs, async ev => {
-        const [ from, to, contract ] = ev.args;
-        this.challenges.register(from, to, contract);
-
-        const challenge = new Contract(contract
-                                     , ChallengeContract.abi
-                                     , this.signer || this.provider);
-        //this.contracts.challenges[contract] = challenge;
-        // We can fire this off asyncronously since nothing is waiting on it
-        this.queryEventLogs(challenge, challenge.filters.Modified)
-            .then(events => {
-              for (var ev of events) {
-                this.challenges.modify(challenge.address
-                                     , ev.args.state)
-              }
-            });
-      }));
-
-      // Finished loading
+      const lobby = new Contract(process.env.VUE_APP_LOBBY_ADDR
+                               , LobbyContract.abi
+                               , this.signer || this.provider);
+      this.contracts.lobby = lobby;
+      const challenges = await this.fetchPlayerData();
       this.loading = false;
+    },
+    async fetchPlayerData() {
+      const { lobby } = this.contracts;
+
+      // Get all the challenges to or from the player and sort into pending and accepted
+      const pending = new Set();
+      const accepted = new Set();
+      const events = await this.queryPlayerEvents(lobby, lobby.filters.NewContract);
+      const challenges = await Promise.all(_.map(events, async ev => {
+        const [ from, to, addr ] = ev.args;
+        console.log('Initializing new challenge', addr);
+        const contract = this.contracts.registerChallenge(addr);
+        const [
+          status, player1, player2, sender, receiver, proposal
+        ] = await Promise.all([
+            contract.state(),
+            contract.player1(),
+            contract.player2(),
+            contract.sender(),
+            contract.receiver(),
+            contract.proposal()
+        ]);
+        const [ p1IsWhite, wagerAmount, timePerMove ] = proposal;
+        this.lobby.metadata[addr] = {
+          status, player1, player2, sender, receiver, p1IsWhite, wagerAmount, timePerMove
+        };
+        if (status === challengeStatus.pending) pending.add(addr);
+        else if (status === challengeStatus.accepted) {
+          const game = await contract.gameContract();
+          accepted.add(game);
+        }
+        return addr;
+      }));
+      this.lobby.challenges = pending;
+      console.log('Initialized pending challenges');
+
+      const started = new Set();
+      const finished = new Set();
+      const games = await Promise.all(_.map(Array.from(accepted), async addr => {
+        console.log('Initializing new game', addr);
+        const contract = await this.contracts.registerGame(addr);
+        const [ status, white, black, isWhiteMove, timePerMove ] = await Promise.all([
+          contract.state(),
+          contract.whitePlayer(),
+          contract.blackPlayer(),
+          contract.isWhiteMove(),
+          contract.timePerMove()
+        ]);
+        this.lobby.metadata[addr] = {
+          status, white, black , isWhiteMove, timePerMove
+        };
+        if (status === gameStatus.started) started.add(addr);
+        else if (status === gameStatus.finished) finished.add(addr);
+      }));
+      this.lobby.games = started;
+      this.lobby.history = finished;
+
+      return challenges;
+    },
+    async fetchChallengeEvents(challenge) {
     },
     async connectWallet() {
       await this.provider.send('eth_requestAccounts', [])
@@ -186,7 +232,7 @@ html, body {
     }
 
     #page {
-      width: 28em;
+      width: 31em;
       margin-left: 1em;
     }
   }
