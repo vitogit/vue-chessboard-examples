@@ -1,21 +1,29 @@
 <script>
 import _ from 'underscore';
+import CloseIcon from 'bytesize-icons/dist/icons/close.svg';
 import gameMixin from '../mixins/games';
 import ChessBoard from '../components/ChessBoard';
+import Modal from '../components/Modal';
 
 export default {
   name: 'ChessGame',
-  components: { ChessBoard },
+  components: { ChessBoard, CloseIcon, Modal },
   mixins: [ gameMixin ],
   data() {
     return {
       waiting: false,
       didChooseMove: false,
       proposedMove: null,
+      showModal: false
     };
   },
   computed: {
     disableControls() { return (this.waiting || !this.gameLoaded || !this.inProgress) },
+  },
+  watch: {
+    isInCheckmate(isOver) { this.showModal = true },
+    playerHasIllegalMoves(isOver) { this.showModal = true },
+    opponentHasIllegalMoves(isOver) { this.showModal = true },
   },
   methods: {
     async chooseMove(from, to) {
@@ -42,7 +50,6 @@ export default {
       await this.game.resign();
       this.waiting = true;
       const eventFilter = this.game.filters.StateChanged(this.wallet.address, this.opponent);
-      // FIXME
       this.game.once(eventFilter, (from, to, state) => {
         console.log('Game state changed to', state);
         this.waiting = false;
@@ -61,7 +68,8 @@ export default {
         this.initGame(this.game.address);
       });
       */
-    }
+    },
+    closeModal() { this.showModal = false }
   },
   created() {
     const { contract } = this.$route.params;
@@ -71,7 +79,7 @@ export default {
 </script>
 
 <template>
-  <div id='chess-game'>
+  <div v-if='gameLoaded' id='chess-game'>
     <div v-if='gameStatus === 0' class='text-xl margin-tb'>Current Game</div>
     <div v-else class='text-xl margin-tb'>Archived Game</div>
 
@@ -88,13 +96,17 @@ export default {
         <div class='flex-shrink bordered padded container'>
           <div id='contract-state' class='flex margin-tb'>
             <div class='flex-1 flex-center center-align'>
-              <div class='text-sentance'>{{ formatGameStatus(gameStatus) }}</div>
+              <div v-if='gameOver && isInCheckmate' class='text-sentance'>You Lost</div>
+              <div v-else-if='gameOver && opponentInCheckmate' class='text-sentance'>You Won!</div>
+              <div v-else-if='inProgress' class='text-sentance'>In Progress</div>
+              <div v-else class='text-sentance'>{{ formatGameStatus(gameStatus) }}</div>
             </div>
           </div>
 
           <div id='current-move' class='flex margin-tb'>
             <div class='flex-1 flex-center center-align'>
-              <div v-if='isCurrentMove' class='text-sentance'>Your Move</div>
+              <div v-if='didChooseMove' class='text-sentance'>Submit Move</div>
+              <div v-else-if='isCurrentMove' class='text-sentance'>Your Move</div>
               <div v-else-if='isOpponentsMove' class='text-sentance'>Opponent's Move</div>
               <div v-else class='text-sentance'>Spectating</div>
             </div>
@@ -112,7 +124,7 @@ export default {
           <button
             class='margin margin-lg-rl'
             @click='submitMove'
-            :disabled='disableControls || !isCurrentMove || !didChooseMove'
+            :disabled='disableControls || !didChooseMove'
           >Move</button>
           <button
             class='margin margin-lg-rl'
@@ -128,44 +140,34 @@ export default {
       </div>
     </div>
 
-    <div class='flex'>
-      <div id='game-info' class='flex-2 padded margin-lg-tb'>
-        <div id='contract-state' class='flex margin-tb'>
-          <div class='flex-shrink center-align text-ml text-bold'>Status</div>
-          <div class='flex-1 flex-end center-align'>
-            <div class='text-sentance'>{{ formatGameStatus(gameStatus) }}</div>
-          </div>
+    <div v-if='showModal'>
+      <Modal v-if='isInCheckmate' title='Checkmate!' @onClose='closeModal'>
+        <div class='margin-lg-tb'>
+        Oh no, you're in checkmate!  That's ok, you can try again.  Please resign now and save your opponent some time and gas fees.
         </div>
 
-        <div id='current-move' class='flex margin-tb'>
-          <div class='flex-shrink center-align text-ml text-bold'>Current Move</div>
-          <div class='flex-1 flex-end center-align'>
-            <div class='margin-rl text-sentance'>{{ currentMove }}</div>
-          </div>
+        <template #controls>
+          <button class='margin-rl'>Resign</button>
+        </template>
+      </Modal>
+      <Modal v-else-if='playerHasIllegalMoves' title='Whoops...' @onClose='closeModal'>
+        <div class='margin-lg-tb'>
+        You submitted an illegal move.  If you encountered this in error, please contact the arbiters and we'll look into the issue.  Please resign now.
         </div>
 
-        <div id='wager-info' class='flex margin-tb'>
-          <div class='flex-shrink center-align text-ml text-bold'>Playing As</div>
-          <div class='flex-1 flex-end center-align'>
-            <div class='margin-rl text-sentance'>{{ playerColor }}</div>
-          </div>
+        <template #controls>
+          <button class='margin-rl'>Resign</button>
+        </template>
+      </Modal>
+      <Modal v-else-if='opponentHasIllegalMoves' title='Oh My God!' @onClose='closeModal'>
+        <div class='margin-lg-tb'>
+        Your opponent submitted an illegal move.  Please dispute the move and an arbiter will review the game and declare you the winner.  We're sorry for the inconvenience.  Please play again.
         </div>
 
-        <div id='opponent' class='flex margin-tb'>
-          <div class='flex-shrink center-align text-ml text-bold'>Opponent</div>
-          <div class='flex-1 flex-end center-align'>
-            <div class='margin-rl text-sentance'>{{ truncAddress(opponent) }}</div>
-          </div>
-        </div>
-
-        <div id='time-per-move' class='flex margin-tb'>
-          <div class='flex-shrink center-align text-ml text-bold'>Time Per Move</div>
-          <div class='flex-1 flex-end center-align'>
-            <div class='margin-rl'>{{ timePerMove }}</div>
-            <div>Minutes</div>
-          </div>
-        </div>
-      </div>
+        <template #controls>
+          <button class='margin-rl'>Dispute</button>
+        </template>
+      </Modal>
     </div>
   </div>
 </template>

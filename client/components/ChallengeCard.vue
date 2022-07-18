@@ -3,7 +3,17 @@ import ethMixin from '../mixins/ethereum';
 
 export default {
   name: 'UserChallengeOptions',
-  props: [ 'color', 'address', 'balance', 'token' ],
+  props: {
+    color: { type: String, default: 'white' },
+    address: {
+      type: String,
+      default: '0x0000000000000000000000000000000000000000'
+    },
+    balance: [ Number, Object, BigInt ],
+    wager: [ Number, Object, BigInt ],
+    timePerMove: [ Number, Object ],
+    token: { type: String, default: 'eth' }
+  },
   mixins: [ ethMixin ]
 }
 </script>
@@ -14,20 +24,43 @@ export default {
       <slot />
     </div>
 
-    <div id='player-color' class='pad text-center'>
+    <div id='player-color' class='margin-tb pad text-center'>
       <div class='bold text-ml text-sentance'>{{ color }}</div>
-      <div class='text-md'>{{ address }}</div>
+      <div class='text-md'>{{ truncAddress(address) }}</div>
     </div>
 
-    <div class='margin-sm-tb flex'>
-      <div class='pad center-align text-md'>Balance</div>
-
+    <div v-if='balance' class='margin margin-sm-tb flex'>
+      <div class='center-align text-md'>Balance</div>
       <div class='flex-1 flex-end center-align'>
         <div class='text-md'>
           {{ formatBalance(balance) }}
         </div>
         <div class='text-md margin-rl'>
           {{ token.toUpperCase() }}
+        </div>
+      </div>
+    </div>
+
+    <div v-if='wager' class='margin margin-sm-tb flex'>
+      <div class='center-align text-md'>Wager</div>
+      <div class='flex-1 flex-end center-align'>
+        <div class='text-md'>
+          {{ formatBalance(wager) }}
+        </div>
+        <div class='text-md margin-rl'>
+          {{ token.toUpperCase() }}
+        </div>
+      </div>
+    </div>
+
+    <div v-if='timePerMove' class='margin margin-sm-tb flex'>
+      <div class='center-align text-md'>Time</div>
+      <div class='flex-1 flex-end center-align'>
+        <div class='text-md'>
+          {{ timePerMove }}
+        </div>
+        <div class='text-md margin-rl'>
+          Min
         </div>
       </div>
     </div>
@@ -50,8 +83,6 @@ export default {
 
   #player-color {
     @extend .bordered;
-    @extend .margin-sm-tb;
-
     div {
       padding-top: .1em;
       padding-bottom: .1em;

@@ -241,7 +241,8 @@ html, body {
 // Muted theme
 #app {
   * {
-    background-color: transparent;
+    //background-color: transparent;
+    //background-color: white;
     color: black;
     border-color: black;
   }

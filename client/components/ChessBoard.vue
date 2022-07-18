@@ -45,7 +45,9 @@ export default {
     }
   },
   mounted() {
-    this.board = new Chessground(this.$refs.board);
+    this.board = new Chessground(this.$refs.board, {
+      animation: { enabled: false }
+    });
     this.reload();
     // TODO Promotions
   }

@@ -24,12 +24,13 @@ export default ({
       gameEngine: null,
       gameLoaded: false,
       gameStatus: gameStatus.created,
-      fen: null,
       whitePlayer: null,
       blackPlayer: null,
       isWhiteMove: true,
       wagerAmount: 0,
-      timePerMove: 0
+      timePerMove: 0,
+      halfmoves: 0,
+      illegalMoves: []
     }
   },
   computed: {
@@ -55,6 +56,7 @@ export default ({
       else return !this.isWhiteMove;
     },
     inProgress() {
+      // FIXME Contract is changing.  created removed
       return [ gameStatus.created, gameStatus.started ].includes(this.gameStatus)
     },
     opponent() {
@@ -63,14 +65,55 @@ export default ({
       else
         return 'spectating';
     },
-    //fen() { return this.gameEngine ? this.gameEngine.fen() : null }
+    isInStalemate() {
+      this.halfmoves;         // Make reactive to halfmoves
+      if (!this.gameEngine) return false;
+      return (this.gameEngine.in_stalemate() || this.gameEngine.in_draw());
+    },
+    isInCheck() {
+      this.halfmoves;         // Make reactive to halfmoves
+      if (!this.gameEngine) return false;
+      return (this.isCurrentMove && this.gameEngine.in_check());
+    },
+    isInCheckmate() {
+      this.halfmoves;         // Make reactive to halfmoves
+      if (!this.gameEngine) return false;
+      return (this.isCurrentMove && this.gameEngine.in_checkmate());
+    },
+    opponentInCheck() {
+      this.halfmoves;         // Make reactive to halfmoves
+      if (!this.gameEngine) return false;
+      return (this.isOpponentsMove && this.gameEngine.in_check());
+    },
+    opponentInCheckmate() {
+      this.halfmoves;         // Make reactive to halfmoves
+      if (!this.gameEngine) return false;
+      return (this.isOpponentsMove && this.gameEngine.in_checkmate());
+    },
+    gameOver() {
+      return this.isInCheckmate || this.opponentInCheckmate || this.isInStalemate;
+    },
+    playerIllegalMoves() {
+      return _.filter(this.illegalMoves, m => (m.player === this.wallet.address));
+    },
+    opponentIllegalMoves() {
+      let out = _.filter(this.illegalMoves, m => (m.player === this.opponent));
+      return _.filter(this.illegalMoves, m => (m.player === this.opponent));
+    },
+    playerHasIllegalMoves() { return (this.playerIllegalMoves.length > 0) },
+    opponentHasIllegalMoves() { return (this.opponentIllegalMoves.length > 0) },
     possibleMoves() {
+      this.halfmoves;         // Make reactive to halfmoves
       let out = new Map();
       SQUARES.forEach(sq => {
         const ms = this.gameEngine.moves({ square: sq, verbose: true });
         if (ms.length > 0) out.set(sq, ms.map(m => m.to));
       });
       return out;
+    },
+    fen() {
+      this.halfmoves;         // Make reactive to halfmoves
+      return this.gameEngine.fen();
     }
   },
   methods: {
@@ -96,25 +139,24 @@ export default ({
           game.timePerMove()
       ]);
 
-      //this.gameEngine.clear();
       const moves = await game.queryFilter(game.filters.MovedPiece);
-      await _.each(moves, async ev => {
+      for (var ev of moves) {
         let [ player, from, to ] = ev.args;
         [ from, to ] = _.map([ from, to ], this.squareLocation);
         try {
           this.tryMove(from, to);
         } catch(err) {
           if (/Attempted illegal move/.test(err.message)) {
-            /* TODO prompt user to issue a challenge */
+            console.warn(err.message, player);
+            this.illegalMoves.push({ player, from, to });
           }
         }
-      });
-      this.fen = this.gameEngine.fen();
-
-      if (this.isCurrentMove && this.gameEngine.in_checkmate()) {
-        console.log('You\'re in checkmate!');
-        /* TODO prompt user to resign */
       }
+      //this.fen = this.gameEngine.fen();
+
+      // FIXME: This is a hack just to make some other bug go away.  If you
+      //        comment this out then it will think it's the opponents move.
+      this.isWhiteMove = await game.isWhiteMove();
 
       return game;
     },
@@ -127,21 +169,24 @@ export default ({
           this.game.isWhiteMove()
       ]);
     },
-    async tryMove(from, to) {
+    tryMove(from, to) {
       const move = this.gameEngine.move({ from, to });
       if (!move) {
         throw new Error(`Attempted illegal move ${from} -> ${to}`);
       } else {
+        // move succeeded
         console.log(`Moved ${from} -> ${to} (${move.san})`);
+        this.isWhiteMove = !this.isWhiteMove;
+        this.halfmoves++;
       }
-
-      if (this.gameEngine.in_checkmate()) {
+    },
+    printGameStatus() {
+      if (this.opponentInCheckmate) {
         console.log('  -- Checkmate --');
-      } else if (this.gameEngine.in_check()) {
-        console.log('  -- Check --');
         /* TODO signal checkmate on the next move */
-      } else if (this.gameEngine.in_stalemate()
-              || this.gameEngine.in_draw()) {
+      } else if (this.opponentInCheck) {
+        console.log('  -- Check --');
+      } else if (this.isInStalemate) {
         console.log('  -- Stalemate --');
         /* TODO signal stalemate */
       }
