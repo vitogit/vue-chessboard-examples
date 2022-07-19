@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: GPL-V3
 pragma solidity >=0.4.22 <0.9.0;
-
-import './BaseContract.sol';
+import './Lobby.sol';
 import './ChessGame.sol';
 
-contract Challenge is BaseContract {
+contract Challenge {
   address public immutable lobby;
-  // Addresses of the players
   address public immutable player1;
   address public immutable player2;
+  address public game;
+  struct GameParams {
+    bool p1IsWhite;
+    uint wagerAmount;
+    uint timePerMove;
+  }
+  GameParams public proposal;
   // The receiver address get's passed back and forth
   // between the two players until one player accepts
   // the challenge
   address public sender;
   address public receiver;
-  address public game;
-  // The wager amount.  At this stage, nothing is final
-  // and both players can modify the proposal
-  GameParams public proposal;
 
   // FIXME Need an Expired state as well once you get to
   //       the time stuff
   enum State { Pending, Accepted, Declined, Canceled }
   State public state;
-  event Modified(address indexed from, address indexed to, State state);
 
   modifier playerOnly() {
     require(msg.sender == player1 || msg.sender == player2, 'PlayerOnly');
@@ -47,16 +47,16 @@ contract Challenge is BaseContract {
 
   // FIXME Should check this is being created by the Lobby contract
   constructor(
-    address _player1,
-    address _player2,
+    address p1,
+    address p2,
     bool p1IsWhite,
     uint wagerAmount,
     uint timePerMove
   ) public {
-    // FIXME Should verify this is actually the lobby somehow
+    // TODO Should verify this is actually the lobby somehow
     lobby = msg.sender;
-    player1 = _player1;
-    player2 = _player2;
+    player1 = p1;
+    player2 = p2;
     // Set the sender and receiver
     sender = player1;
     receiver = player2;
@@ -68,12 +68,6 @@ contract Challenge is BaseContract {
     state = State.Pending;
   }
 
-  function swapSenderReceiver() private {
-    address a = sender;
-    sender = receiver;
-    receiver = a;
-  }
-
   function whitePlayer() public view returns (address) {
     return proposal.p1IsWhite ? player1 : player2;
   }
@@ -82,44 +76,50 @@ contract Challenge is BaseContract {
     return proposal.p1IsWhite ? player2 : player1;
   }
 
-  function cancel() external isPending senderOnly {
-    state = State.Canceled;
-    emit Modified(sender, receiver, state);
-  }
-
-  function accept() external isPending receiverOnly {
-    state = State.Accepted;
-    emit Modified(receiver, sender, state);
-
-    address white = whitePlayer();
-    address black = blackPlayer();
-    ChessGame addr = new ChessGame(white
-                                 , black
-                                 , proposal.timePerMove);
-    game = address(addr);
-    emit NewContract(white, black, game);
-  }
-
-  function reject() external isPending receiverOnly {
-    state = State.Declined;
-    emit Modified(receiver, sender, state);
+  // TODO Make this a modifier
+  function setSenderReceiver() private {
+    if (msg.sender == player1) {
+      sender = player1;
+      receiver = player2;
+    } else if (msg.sender == player2) {
+      sender = player2;
+      receiver = player1;
+    } else {
+      // FIXME Throw an error
+    }
   }
 
   function modify(bool p1IsWhite,
                   uint wagerAmount,
                   uint timePerMove)
   external isPending playerOnly {
-    // Modify the proposal
+    setSenderReceiver();
     proposal.p1IsWhite = p1IsWhite;
     proposal.wagerAmount = wagerAmount;
     proposal.timePerMove = timePerMove;
+    state = State.Pending;
+  }
 
-    // Do nothing if the sender modifies
-    if (msg.sender == receiver) {
-      swapSenderReceiver();
-    }
+  function cancel() external isPending senderOnly {
+    setSenderReceiver();
+    state = State.Canceled;
+    Lobby(lobby).cancel(msg.sender, state);
+  }
 
-    // Emit modified data
-    emit Modified(sender, receiver, state);
+  function decline() external isPending receiverOnly {
+    setSenderReceiver();
+    state = State.Declined;
+    Lobby(lobby).cancel(msg.sender, state);
+  }
+
+  function accept() external isPending receiverOnly {
+    setSenderReceiver();
+    state = State.Accepted;
+    // Create the game
+    address white = whitePlayer();
+    address black = blackPlayer();
+    ChessGame _game = new ChessGame(white, black, proposal.timePerMove);
+    game = address(_game);
+    Lobby(lobby).startGame(address(game), white, black);
   }
 }

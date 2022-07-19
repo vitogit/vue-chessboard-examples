@@ -1,21 +1,22 @@
-const Lobby = artifacts.require("Lobby");
-const Challenge = artifacts.require("Challenge");
+const _ = require('underscore');
+const Lobby = artifacts.require('Lobby');
+const Challenge = artifacts.require('Challenge');
 const { toBN } = web3.utils;
 
-contract("Lobby", function (accounts) {
+contract('Lobby', function (accounts) {
   let lobby;
   let [ arbiter, p1, p2, p3 ] = accounts;
 
   before(async () => { lobby = await Lobby.deployed() });
 
-  it("Fetches the correct arbiter", async () => {
+  it('Fetches the correct arbiter', async () => {
     const addr = await lobby.arbiter();
     expect(addr).to.equal(arbiter);
   });
 
   function testChallenge(from, to, playAsWhite, wager, timeout) {
     return async () => {
-      let tx;
+      let tx, challenge;
 
       before(async () => {
         tx = await lobby.challenge(to
@@ -23,13 +24,41 @@ contract("Lobby", function (accounts) {
                                  , wager
                                  , timeout
                                  , { from });
+        expect(tx.logs[0]).to.have.nested.property('args.challenge');
+        challenge = tx.logs[0].args.challenge;
       });
 
-      it('Fires a NewContract event', async () => {
-        expect(tx.logs[0]).to.have.property('event', 'NewContract');
-        expect(tx.logs[0]).to.have.nested.property('args.player1', from);
-        expect(tx.logs[0]).to.have.nested.property('args.player2', to);
-        expect(tx.logs[0]).to.have.nested.property('args.target');
+      it('Fires a CreatedChallenge event', async () => {
+        const [ ev ] = _.filter(tx.logs, l => l.event === 'CreatedChallenge');
+        expect(ev).to.be.ok;
+        expect(ev).to.have.nested.property('args.challenge');
+        expect(ev).to.have.nested.property('args.player1', from);
+        expect(ev).to.have.nested.property('args.player2', to);
+      });
+
+      // FIXME Create a game manually if you can and pass that instead of
+      //       challenge.  It's hard to test because game calls back to
+      //       lobby.
+      it('players can\'t start the game', async () => {
+        for (var player of [ from, to ]) {
+          try {
+            await lobby.startGame(challenge, from, to);
+            assert.fail('Contract should have failed');
+          } catch(err) {
+            expect(err.reason).to.equal('ChallengeContractOnly');
+          }
+        }
+      });
+
+      it('players can\'t finish the game', async () => {
+        for (var player of [ from, to ]) {
+          try {
+            await lobby.finishGame(1, player);
+            assert.fail('Contract should have failed');
+          } catch(err) {
+            expect(err.reason).to.equal('GameContractOnly');
+          }
+        }
       });
     };
   };
