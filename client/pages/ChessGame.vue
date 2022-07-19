@@ -21,25 +21,24 @@ export default {
     disableControls() { return (this.waiting || !this.gameLoaded || !this.inProgress) },
   },
   watch: {
-    isInCheckmate(isOver) { this.showModal = true },
+    isInCheckmate(isOver) { if (isOver && !this.didChooseMove) this.showModal = true },
     playerHasIllegalMoves(isOver) { this.showModal = true },
     opponentHasIllegalMoves(isOver) { this.showModal = true },
   },
   methods: {
     async chooseMove(from, to) {
       console.log('Choose move', from, to);
-      this.tryMove(from, to);
-      this.proposedMove = _.map([ from, to ], this.squareIndex);
+      const san = this.tryMove(from+to);
+      this.proposedMove = san;
       this.didChooseMove = true;
     },
     async submitMove() {
-      const [ from, to ] = this.proposedMove;
-      console.log('Submit move', from, to);
-      await this.game.move(from, to);
+      console.log('Submit move', this.proposedMove);
+      await this.game.move(this.proposedMove, '0x00');
       this.waiting = true;
-      const eventFilter = this.game.filters.MovedPiece(this.wallet.address);
-      this.game.once(eventFilter, (player, from, to) => {
-        console.log('Move received', from, to);
+      const eventFilter = this.game.filters.MoveSAN(this.wallet.address);
+      this.game.once(eventFilter, (player, san, flags) => {
+        console.log('Move received', san, flags);
         this.waiting = false;
         this.didChooseMove = false;
         this.refreshGame();
@@ -47,33 +46,23 @@ export default {
     },
     async resign() {
       console.log('Resigning game', this.game.address);
+      this.closeModal();
       await this.game.resign();
       this.waiting = true;
-      const eventFilter = this.game.filters.StateChanged(this.wallet.address, this.opponent);
-      this.game.once(eventFilter, (from, to, state) => {
-        console.log('Game state changed to', state);
+      const { lobby } = this.contracts;
+      const eventFilter = lobby.filters.GameFinished(this.game.address);
+      lobby.once(eventFilter, game => {
+        console.log('Resigned');
         this.waiting = false;
         this.refreshGame();
       });
-    },
-    async offerStalemate() {
-      console.log('Signal stalemate', this.game.address);
-      await this.game.signalStalemate();
-      /*
-      this.waiting = true;
-      const eventFilter = this.game.filters.StateChanged(this.wallet.address, this.opponent);
-      this.game.once(eventFilter, (from, to, state) => {
-        console.log('Game state changed to', state);
-        this.waiting = false;
-        this.initGame(this.game.address);
-      });
-      */
     },
     closeModal() { this.showModal = false }
   },
   created() {
     const { contract } = this.$route.params;
-    this.initGame(contract);
+    this.initGame(contract)
+        .then(this.listenForMoves);
   }
 }
 </script>
@@ -96,8 +85,8 @@ export default {
         <div class='flex-shrink bordered padded container'>
           <div id='contract-state' class='flex margin-tb'>
             <div class='flex-1 flex-center center-align'>
-              <div v-if='gameOver && isInCheckmate' class='text-sentance'>You Lost</div>
-              <div v-else-if='gameOver && opponentInCheckmate' class='text-sentance'>You Won!</div>
+              <div v-if='isWinner || opponentInCheckmate' class='text-sentance'>You Won!</div>
+              <div v-else-if='isLoser || isInCheckmate' class='text-sentance'>You Lost</div>
               <div v-else-if='inProgress' class='text-sentance'>In Progress</div>
               <div v-else class='text-sentance'>{{ formatGameStatus(gameStatus) }}</div>
             </div>
@@ -105,7 +94,8 @@ export default {
 
           <div id='current-move' class='flex margin-tb'>
             <div class='flex-1 flex-center center-align'>
-              <div v-if='didChooseMove' class='text-sentance'>Submit Move</div>
+              <div v-if='gameOver' class='text-sentance'>Game Over</div>
+              <div v-else-if='didChooseMove' class='text-sentance'>Submit Move</div>
               <div v-else-if='isCurrentMove' class='text-sentance'>Your Move</div>
               <div v-else-if='isOpponentsMove' class='text-sentance'>Opponent's Move</div>
               <div v-else class='text-sentance'>Spectating</div>
@@ -133,21 +123,24 @@ export default {
           >Resign</button>
           <button
             class='margin margin-lg-rl'
-            @click='offerStalemate'
-            :disabled='disableControls'
+            :disabled='true'
           >Stalemate</button>
         </div>
       </div>
     </div>
 
     <div v-if='showModal'>
-      <Modal v-if='isInCheckmate' title='Checkmate!' @onClose='closeModal'>
+      <Modal v-if='inProgress && isInCheckmate' title='Checkmate!' @onClose='closeModal'>
         <div class='margin-lg-tb'>
         Oh no, you're in checkmate!  That's ok, you can try again.  Please resign now and save your opponent some time and gas fees.
         </div>
 
         <template #controls>
-          <button class='margin-rl'>Resign</button>
+          <button
+            class='margin margin-lg-rl'
+            @click='resign'
+            :disabled='disableControls'
+          >Resign</button>
         </template>
       </Modal>
       <Modal v-else-if='playerHasIllegalMoves' title='Whoops...' @onClose='closeModal'>

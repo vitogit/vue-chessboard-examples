@@ -28,43 +28,40 @@ export default {
       console.log('Accepted challenge');
       await this.challenge.accept();
       this.waiting = true;
-      const eventFilter = this.challenge.filters.StateChanged(this.address, this.opponent);
-      this.challenge.once(eventFilter, (p1, p2, state) => {
-        console.log('Challenge accepted', this.challenge.address);
+      const { lobby } = this.contracts;
+      const eventFilter = lobby.filters.GameStarted(null, this.address, this.opponent);
+      lobby.once(eventFilter, (addr, p1, p2) => {
+        console.log('New game created', addr);
         this.lobby.terminate(this.challenge.address);
+        this.lobby.newGame(addr, p1, p2);
         this.waiting = false;
-      });
-
-      const gameFilter = this.challenge.filters.NewContract(this.whitePlayer, this.blackPlayer);
-      this.challenge.once(gameFilter, async (p1, p2, address) => {
-        console.log('New game created', address);
-        this.lobby.newGame(address, p1, p2);
-        this.$router.push('/game/'+address);
+        this.$router.push('/game/'+addr);
       });
     },
     async decline() {
       console.log('Declined challenge');
       await this.challenge.decline();
       this.waiting = true;
-      const eventFilter = this.challenge.filters.StateChanged(this.address, this.opponent);
-      this.challenge.once(eventFilter, (p1, p2, state) => {
-        console.log('Challenge declined', this.challenge.address);
-        this.lobby.terminate(this.challenge.address);
+      const { lobby } = this.contracts;
+      const eventFilter = lobby.filters.CanceledChallenge(this.challenge.address);
+      lobby.once(eventFilter, (addr, p1, state) => {
+        console.log('Challenge declined', addr);
+        this.lobby.terminate(addr);
         this.waiting = false;
-        this.initChallenge(this.challenge.address);
-        //this.$router.go();
+        this.initChallenge(addr);
       });
     },
     async cancel() {
       console.log('Canceled challenge');
       await this.challenge.cancel();
       this.waiting = true;
-      const eventFilter = this.challenge.filters.StateChanged(this.address, this.opponent);
-      this.challenge.once(eventFilter, (p1, p2, state) => {
-        console.log('Challenge canceled', this.challenge.address);
-        this.lobby.terminate(this.challenge.address);
+      const { lobby } = this.contracts;
+      const eventFilter = lobby.filters.CanceledChallenge(this.challenge.address);
+      lobby.once(eventFilter, (addr, p1, state) => {
+        console.log('Challenge cancelled', addr);
+        this.lobby.terminate(addr);
         this.waiting = false;
-        this.initChallenge(this.challenge.address);
+        this.initChallenge(addr);
       });
     }
   },

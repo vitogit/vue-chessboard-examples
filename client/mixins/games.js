@@ -29,21 +29,35 @@ export default ({
       isWhiteMove: true,
       wagerAmount: 0,
       timePerMove: 0,
+      winner: null,
       halfmoves: 0,
       illegalMoves: []
     }
   },
   computed: {
+    opponent() {
+      if (this.isPlayer)
+        return this.isWhitePlayer ? this.blackPlayer : this.whitePlayer;
+      else
+        return 'spectating';
+    },
     isPlayer() {
       return [ this.whitePlayer, this.blackPlayer ].includes(this.wallet.address);
     },
     isWhitePlayer() { return this.wallet.address === this.whitePlayer },
     isBlackPlayer() { return this.wallet.address === this.blackPlayer },
-    playerColor() {
-      if (this.isPlayer) return this.isWhitePlayer ? 'white' : 'black';
-      else return 'spectating';
+    playerColorAbv() {
+      if (this.isPlayer) return this.isWhitePlayer ? 'w' : 'b';
+      else return 'x';
     },
-    orientation() { return this.playerColor == 'black' ? 'black' : 'white' },
+    opponentColorAbv() {
+      if (this.isPlayer) return this.isWhitePlayer ? 'b' : 'w';
+      else return 'x';
+    },
+    orientation() {
+      // Default white
+      return this.playerColorAbv == 'b' ? 'black' : 'white'
+    },
     currentMove() { return this.isWhiteMove ? 'white' : 'black' },
     isCurrentMove() {
       if (this.isPlayer)
@@ -55,16 +69,6 @@ export default ({
         return this.isWhitePlayer ? !this.isWhiteMove : this.isWhiteMove
       else return !this.isWhiteMove;
     },
-    inProgress() {
-      // FIXME Contract is changing.  created removed
-      return [ gameStatus.created, gameStatus.started ].includes(this.gameStatus)
-    },
-    opponent() {
-      if (this.isPlayer)
-        return this.isWhitePlayer ? this.blackPlayer : this.whitePlayer;
-      else
-        return 'spectating';
-    },
     isInStalemate() {
       this.halfmoves;         // Make reactive to halfmoves
       if (!this.gameEngine) return false;
@@ -73,25 +77,42 @@ export default ({
     isInCheck() {
       this.halfmoves;         // Make reactive to halfmoves
       if (!this.gameEngine) return false;
-      return (this.isCurrentMove && this.gameEngine.in_check());
+      return ((this.gameEngine.turn() === this.playerColorAbv)
+             && this.gameEngine.in_check());
     },
     isInCheckmate() {
       this.halfmoves;         // Make reactive to halfmoves
       if (!this.gameEngine) return false;
-      return (this.isCurrentMove && this.gameEngine.in_checkmate());
+      return ((this.gameEngine.turn() === this.playerColorAbv)
+             && this.gameEngine.in_checkmate());
     },
     opponentInCheck() {
       this.halfmoves;         // Make reactive to halfmoves
       if (!this.gameEngine) return false;
-      return (this.isOpponentsMove && this.gameEngine.in_check());
+      return ((this.gameEngine.turn() === this.opponentColorAbv)
+             && this.gameEngine.in_check());
     },
     opponentInCheckmate() {
       this.halfmoves;         // Make reactive to halfmoves
       if (!this.gameEngine) return false;
-      return (this.isOpponentsMove && this.gameEngine.in_checkmate());
+      return ((this.gameEngine.turn() === this.opponentColorAbv)
+             && this.gameEngine.in_checkmate());
+    },
+    inProgress() {
+      return this.gameStatus === gameStatus.started;
+    },
+    inReview() {
+      return this.gameStatus === gameStatus.review;
     },
     gameOver() {
-      return this.isInCheckmate || this.opponentInCheckmate || this.isInStalemate;
+      //return this.isInCheckmate || this.opponentInCheckmate || this.isInStalemate;
+      return this.gameStatus > gameStatus.started;
+    },
+    isWinner() {
+      return this.winner === this.wallet.address;
+    },
+    isLoser() {
+      return this.winner === this.opponent;
     },
     playerIllegalMoves() {
       return _.filter(this.illegalMoves, m => (m.player === this.wallet.address));
@@ -139,20 +160,15 @@ export default ({
           game.timePerMove()
       ]);
 
-      const moves = await game.queryFilter(game.filters.MovedPiece);
-      for (var ev of moves) {
-        let [ player, from, to ] = ev.args;
-        [ from, to ] = _.map([ from, to ], this.squareLocation);
-        try {
-          this.tryMove(from, to);
-        } catch(err) {
-          if (/Attempted illegal move/.test(err.message)) {
-            console.warn(err.message, player);
-            this.illegalMoves.push({ player, from, to });
-          }
-        }
+      if (this.gameStatus === gameStatus.finished) {
+        this.winner = await game.winner();
       }
-      //this.fen = this.gameEngine.fen();
+
+      const moves = await game.queryFilter(game.filters.MoveSAN);
+      for (var ev of moves) {
+        let [ player, san, flags ] = ev.args;
+        await this.tryMove(san);
+      }
 
       // FIXME: This is a hack just to make some other bug go away.  If you
       //        comment this out then it will think it's the opponents move.
@@ -169,16 +185,28 @@ export default ({
           this.game.isWhiteMove()
       ]);
     },
-    tryMove(from, to) {
-      const move = this.gameEngine.move({ from, to });
+    listenForMoves() {
+      const eventFilter = this.game.filters.MoveSAN([ this.wallet.address, this.opponent ]);
+      this.game.on(eventFilter, async (player, san, flags, ev) => {
+        if (ev.blockNumber > this.latestBlock) {
+          this.tryMove(san);
+        }
+      });
+    },
+    async tryMove(san) {
+      const move = this.gameEngine.move(san, { sloppy: true });
       if (!move) {
-        throw new Error(`Attempted illegal move ${from} -> ${to}`);
-      } else {
-        // move succeeded
-        console.log(`Moved ${from} -> ${to} (${move.san})`);
-        this.isWhiteMove = !this.isWhiteMove;
-        this.halfmoves++;
+        console.warn('Attempted illegal move', san);
+        this.illegalMoves.push(san);
+        return;
       }
+
+      // move succeeded
+      console.log(`Moved ${move.san} (${move.from} -> ${move.to})`);
+      this.latestBlock = await this.wallet.provider.getBlockNumber();
+      this.isWhiteMove = !this.isWhiteMove;
+      this.halfmoves++;
+      return move.san;
     },
     printGameStatus() {
       if (this.opponentInCheckmate) {

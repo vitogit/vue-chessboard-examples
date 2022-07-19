@@ -31,44 +31,10 @@ export default defineStore({
         return contracts.challenge(address);
       }
 
-      /*
-      // TODO Should find a cleaner way to do this
-      if (wallet.address == from) {
-        this.metadata[address] = { active: true, waiting: true };
-      } else if (wallet.address == to) {
-        this.metadata[address] = { active: true, waiting: false };
-      } else {
-        console.error('Received erroneous event', address);
-        return;
-      }
-      */
-
       //this.challenges.add(address);
       const challenge = contracts.registerChallenge(address);
       console.log('Initialized new challenge', address);
       return challenge;
-    },
-    modifiedChallenge(address, from, to, state) {
-      const wallet = useWalletStore();
-
-      if (!this.metadata[address]) {
-        console.error('No record of contract', address);
-        return;
-      }
-
-      // Update the metadata
-      if (state > 0) {
-        this.terminate(address);
-      } else {
-        // Still in pending.  Was a modified event.
-        if (wallet.address == from) {
-          this.metadata[address].waiting = true;
-        } else if (wallet.address == to) {
-          this.metadata[address].waiting = false;
-        } else {
-          console.error('Received erroneous event', address);
-        }
-      }
     },
     newGame(address, white, black) {
       const wallet = useWalletStore();

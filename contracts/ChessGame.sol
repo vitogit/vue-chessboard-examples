@@ -25,10 +25,10 @@ contract ChessGame {
   enum State { Started, Finished, Paused, Review }
   State public state;
 
-  event ArbiterAction(address indexed arbiter, string comment);
   event MoveSAN(address indexed player, string san, bytes1 flags);
   //event MovedPiece(address indexed player, bytes1 from, bytes1 to);
   //event CapturedPiece(address indexed player, bytes2 from, bytes2 to);
+  event ArbiterAction(address indexed arbiter, string comment);
 
   modifier currentPlayer() {
     require(isWhiteMove ? (msg.sender == whitePlayer)

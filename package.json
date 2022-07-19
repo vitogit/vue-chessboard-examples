@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@vue/composition-api": "^1.7.0",
+    "bytesize-icons": "^1.4.0",
     "chess.js": "^0.13.3",
     "chessground": "^8.2.1",
     "core-js": "^3.6.4",
@@ -25,11 +26,13 @@
     "vue-router": "3.5.2"
   },
   "devDependencies": {
+    "@truffle/hdwallet-provider": "^2.0.11",
     "@vue/cli-plugin-babel": "~5.0.6",
     "@vue/cli-service": "~5.0.6",
     "node-sass": "^7.0.1",
     "sass-loader": "^13.0.1",
     "vue-loader": "^17.0.0",
+    "vue-svg-loader": "^0.16.0",
     "vue-template-compiler": "^2.6.14"
   }
 }

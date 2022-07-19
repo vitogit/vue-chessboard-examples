@@ -13,8 +13,8 @@ export default ({
     },
     async queryPlayerEvents(contract, filter) {
       const [ incoming, outgoing ] = await Promise.all([
-        contract.queryFilter(filter(null, this.wallet.address)),
-        contract.queryFilter(filter(this.wallet.address, null))
+        contract.queryFilter(filter(null, null, this.wallet.address)),
+        contract.queryFilter(filter(null, this.wallet.address, null))
       ]);
       return [ ...incoming, ...outgoing ];
     }

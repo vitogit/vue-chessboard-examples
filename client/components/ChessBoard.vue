@@ -17,6 +17,9 @@ export default {
       board: null
     };
   },
+  watch: {
+    fen() { this.reload() }
+  },
   computed: {
     isCurrentMove() {
       return (this.currentMove === this.orientation) ? this.currentMove : false;

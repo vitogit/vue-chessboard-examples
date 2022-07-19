@@ -57,9 +57,9 @@ export default ({
     opponentBalance() { return this.isPlayer2 ? this.p1Balance : this.p2Balance }
   },
   methods: {
-    async initChallenge(address) {
-      console.log('Initialize challenge contract data', address);
-      this.challenge = this.contracts.challenge(address);
+    async initChallenge(addr) {
+      console.log('Initialize challenge contract data', addr);
+      this.challenge = this.contracts.challenge(addr);
 
       let proposal;
       [ this.player1,

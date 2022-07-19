@@ -6,13 +6,13 @@ import './ChessGame.sol';
 contract Lobby {
   address public immutable arbiter;
 
-  event CreatedChallenge(address indexed challenge
+  event CreatedChallenge(address challenge
                        , address indexed player1
                        , address indexed player2);
   event CanceledChallenge(address indexed challenge
                         , address indexed player
                         , Challenge.State state);
-  event GameStarted(address indexed game
+  event GameStarted(address game
                   , address indexed whitePlayer
                   , address indexed blackPlayer);
   event GameFinished(address indexed game

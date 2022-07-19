@@ -9,7 +9,5 @@ export default defineStore({
     connected: false,
     address: null,
     balance: 0,
-    // format (ticker, balance)
-    //tokens: [],
   })
 });

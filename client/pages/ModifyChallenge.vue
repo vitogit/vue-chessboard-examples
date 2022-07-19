@@ -44,11 +44,11 @@ export default {
       this.loading = true;
 
       // Listen for a new challenge and redirect
-      const eventFilter = this.challenge.filters.StateChanged(this.wallet.address, this.opponent);
-      this.challenge.once(eventFilter, (from, to, state) => {
-        const { address } = this.challenge;
-        console.log('Modified challenge', address);
-        this.lobby.modifiedChallenge(address, from, to, true);
+      console.log('challenge', this.challenge.filters);
+      const eventFilter = this.challenge.filters.ChallengeModified(this.wallet.address);
+      this.challenge.once(eventFilter, player => {
+        console.log('Modified challenge', this.challenge.address);
+        //this.lobby.modifiedChallenge(address, from, to, true);
         this.loading = false;
         this.$router.push('/challenge/'+address);
       });

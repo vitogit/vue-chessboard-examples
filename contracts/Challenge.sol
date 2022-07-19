@@ -24,6 +24,7 @@ contract Challenge {
   //       the time stuff
   enum State { Pending, Accepted, Declined, Canceled }
   State public state;
+  event ChallengeModified(address indexed player);
 
   modifier playerOnly() {
     require(msg.sender == player1 || msg.sender == player2, 'PlayerOnly');
@@ -97,7 +98,7 @@ contract Challenge {
     proposal.p1IsWhite = p1IsWhite;
     proposal.wagerAmount = wagerAmount;
     proposal.timePerMove = timePerMove;
-    state = State.Pending;
+    emit ChallengeModified(msg.sender);
   }
 
   function cancel() external isPending senderOnly {

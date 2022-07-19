@@ -75,9 +75,9 @@ export default {
       // Get all the challenges to or from the player and sort into pending and accepted
       const pending = new Set();
       const accepted = new Set();
-      const events = await this.queryPlayerEvents(lobby, lobby.filters.NewContract);
+      const events = await this.queryPlayerEvents(lobby, lobby.filters.CreatedChallenge);
       const challenges = await Promise.all(_.map(events, async ev => {
-        const [ from, to, addr ] = ev.args;
+        const [ addr, from, to ] = ev.args;
         console.log('Initializing new challenge', addr);
         const contract = this.contracts.registerChallenge(addr);
         const [
@@ -96,7 +96,7 @@ export default {
         };
         if (status === challengeStatus.pending) pending.add(addr);
         else if (status === challengeStatus.accepted) {
-          const game = await contract.gameContract();
+          const game = await contract.game();
           accepted.add(game);
         }
         return addr;
@@ -126,8 +126,6 @@ export default {
       this.lobby.history = finished;
 
       return challenges;
-    },
-    async fetchChallengeEvents(challenge) {
     },
     async connectWallet() {
       await this.provider.send('eth_requestAccounts', [])

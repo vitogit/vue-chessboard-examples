@@ -10,5 +10,14 @@ module.exports = {
     conf.resolve
         .alias
         .set('@', path.join(__dirname, './client'))
+    conf.module.rule('svg').clear();
+  },
+  configureWebpack: {
+    module: {
+      rules: [{
+        test: /bytesize-icons\/.*\.svg$/,
+        loader: 'vue-svg-loader'
+      }]
+    }
   }
 }

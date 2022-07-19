@@ -95,7 +95,7 @@ export default {
         :key='`waiting-${c}`'
         :to='"/challenge/"+c'
       >
-        {{ 'OPPONENT' }}
+        {{ c }}
       </router-link>
     </div>
 

@@ -33,13 +33,14 @@ export default {
       this.waiting = true;
 
       // Listen for a new challenge and redirect
-      const eventFilter = lobby.filters.NewContract(this.wallet.address
-                                                  , this.opponent);
-      lobby.once(eventFilter, (from, to, address) => {
-        console.log('Issued challenge', address);
-        let out = this.lobby.newChallenge(address, from, to);
+      const eventFilter = lobby.filters.CreatedChallenge(null
+                                                       , this.wallet.address
+                                                       , this.opponent);
+      lobby.once(eventFilter, (addr, from, to) => {
+        console.log('Issued challenge', addr);
+        let out = this.lobby.newChallenge(addr, from, to);
         this.waiting = false;
-        this.$router.push('/challenge/'+address);
+        this.$router.push('/challenge/'+addr);
       });
     }
   },
