@@ -2,6 +2,10 @@
   border-style: solid;
 }
 
+.border-top {
+  border-top-style: solid;
+}
+
 .border-bottom {
   border-bottom-style: solid;
 }
@@ -27,4 +31,3 @@
   @extend .border-round;
   @extend .border-md;
 }
-

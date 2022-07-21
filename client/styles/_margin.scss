@@ -13,6 +13,21 @@
   margin-bottom: .4em;
 }
 
+// Small margin
+.margin-sm {
+  margin: .2em;
+}
+
+.margin-sm-rl {
+  margin-right: .2em;
+  margin-left: .2em;
+}
+
+.margin-sm-tb {
+  margin-top: .2em;
+  margin-bottom: .2em;
+}
+
 // Large margin
 .margin-lg {
   margin: 1em;
@@ -28,17 +43,17 @@
   margin-bottom: 1em;
 }
 
-// Small margin
-.margin-sm {
-  margin: .2em;
+// XLarge margin
+.margin-xl {
+  margin: 2em;
 }
 
-.margin-sm-rl {
-  margin-right: .2em;
-  margin-left: .2em;
+.margin-xl-rl {
+  margin-right: 2em;
+  margin-left: 2em;
 }
 
-.margin-sm-tb {
-  margin-top: .2em;
-  margin-bottom: .2em;
+.margin-xl-tb {
+  margin-top: 2em;
+  margin-bottom: 2em;
 }

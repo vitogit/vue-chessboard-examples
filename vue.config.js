@@ -17,6 +17,9 @@ module.exports = {
       rules: [{
         test: /bytesize-icons\/.*\.svg$/,
         loader: 'vue-svg-loader'
+      }, {
+        test: /\.mp3$/,
+        loader: 'file-loader'
       }]
     }
   }

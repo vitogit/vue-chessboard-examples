@@ -189,7 +189,11 @@ export default ({
       const eventFilter = this.game.filters.MoveSAN([ this.wallet.address, this.opponent ]);
       this.game.on(eventFilter, async (player, san, flags, ev) => {
         if (ev.blockNumber > this.latestBlock) {
-          this.tryMove(san);
+          // Play audio file when we get a move from either player
+          this.playAudio('Blaster');
+          // If the move is from the current player, then it will register twice.
+          // We already called tryMove in the chooseMove function.
+          if (player === this.opponent) this.tryMove(san);
         }
       });
     },
@@ -207,6 +211,10 @@ export default ({
       this.isWhiteMove = !this.isWhiteMove;
       this.halfmoves++;
       return move.san;
+    },
+    playAudio(clip) {
+      const audio = new Audio(`/sound/${clip}.mp3`);
+      audio.play();
     },
     printGameStatus() {
       if (this.opponentInCheckmate) {

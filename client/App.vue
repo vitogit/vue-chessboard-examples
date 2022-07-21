@@ -14,12 +14,15 @@ import contractsMixin from './mixins/contracts';
 import challengeMixin from './mixins/challenges';
 
 import ConnectWallet from './components/ConnectWallet.vue';
+import AlertIcon from 'bytesize-icons/dist/icons/alert.svg';
+import GithubIcon from 'bytesize-icons/dist/icons/github.svg';
+import TwitterIcon from 'bytesize-icons/dist/icons/twitter.svg';
 
 const { Web3Provider } = ethers.providers;
 
 export default {
   name: 'App',
-  components: { ConnectWallet },
+  components: { ConnectWallet, AlertIcon, GithubIcon, TwitterIcon },
   mixins: [ ethMixin, walletMixin, contractsMixin, challengeMixin ],
   data () {
     return {
@@ -138,45 +141,81 @@ export default {
 
 <template>
   <div id='app'>
-    <div id='sidebar'>
-      <div class='bordered container'>
-        <div id='brand'>Blockchain Chess Lounge</div>
-        <div id='wallet'>
-          <div class='flex pad-sm align-bottom border-bottom border-sm'>
-            <div class='flex-shrink text-ml'>Account</div>
-            <div v-if='isConnected' class='flex-1 flex-end'>
-              {{ truncAddress(address) }}
-            </div>
-            <div v-else class='flex-1 flex-end'>---</div>
+    <div id='body'>
+      <div id='sidebar'>
+        <div class='bordered container'>
+          <div id='brand'>
+            <div>The Blockchain</div>
+            <div>Chess Lounge</div>
           </div>
-
-          <div class='flex pad-sm align-bottom'>
-            <div class='flex-shrink text-ml'>Balance</div>
-            <div v-if='isConnected' class='flex-1 flex-end'>
-              <div class='margin-sm-rl'>
-                {{ formatBalance(balance) }}
+          <div id='wallet'>
+            <div class='flex pad-sm align-bottom border-bottom border-sm'>
+              <div class='flex-shrink text-ml'>Account</div>
+              <div class='flex-1 flex-end'>
+                {{ isConnected ? truncAddress(address) : '---' }}
               </div>
-              <div class='flex-shrink'>ETH</div>
             </div>
-            <div v-else class='flex-1 flex-end'>---</div>
+
+            <div class='flex pad-sm align-bottom'>
+              <div class='flex-shrink text-ml'>Balance</div>
+              <div v-if='isConnected' class='flex-1 flex-end'>
+                <div class='margin-sm-rl'>
+                  {{ formatBalance(balance) }}
+                </div>
+                <div class='flex-shrink'>ETH</div>
+              </div>
+              <div v-else class='flex-1 flex-end'>---</div>
+            </div>
           </div>
-        </div>
-        <div id='navigation'>
-          <ConnectWallet
-            :isInstalled='wallet.installed'
-            :isConnected='wallet.connected'
-            :onConnect='this.connectWallet'
-            :onClick='() => this.$router.push("/lobby")'
-          >Lounge</ConnectWallet>
-          <router-link tag='button' to='/ai'>Fun Play</router-link>
-          <router-link tag='button' to='/about'>Rules</router-link>
-          <router-link tag='button' to='/settings'>Settings</router-link>
+          <div id='navigation'>
+            <ConnectWallet
+              :isInstalled='wallet.installed'
+              :isConnected='wallet.connected'
+              :onConnect='this.connectWallet'
+              :onClick='() => this.$router.push("/lobby")'
+            >Lounge</ConnectWallet>
+            <router-link tag='button' to='/ai'>Fun Play</router-link>
+            <router-link tag='button' to='/about'>Rules</router-link>
+            <router-link tag='button' to='/settings'>Settings</router-link>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div id='page' class='flex'>
-      <router-view v-if='!loading' class='flex-1' />
+      <div id='page' class='flex'>
+        <router-view v-if='!loading' class='flex-1' />
+      </div>
+    </div>
+    <div id='footer'>
+      <div class='flex flex-grow'>
+        <div class='text-sm margin-sm'>Currently deployed on Goerli Testnet.</div>
+        <div class='text-sm margin-sm'>Please file bugs :)</div>
+      </div>
+      <a href='https://twitter.com/TheChessLounge'>
+        <TwitterIcon
+          class='margin-sm'
+          viewBox='0 0 64 64'
+          width='14'
+          height='14'
+        />
+      </a>
+      <a href='https://github.com/jjduhamel/bcl'>
+        <GithubIcon
+          class='margin-sm'
+          viewBox='0 0 64 64'
+          width='14'
+          height='14'
+          @click='() => $emit("onClose")'
+        />
+      </a>
+      <a href='https://github.com/jjduhamel/bcl/issues/new?template=bug_report.md'>
+        <AlertIcon
+          class='margin-sm'
+          viewBox='0 0 32 32'
+          width='14'
+          height='14'
+          @click='() => $emit("onClose")'
+        />
+      </a>
     </div>
   </div>
 </template>
@@ -190,14 +229,28 @@ html, body {
   margin: 0;
 
   #app {
-    max-width: 1024px;
-    height: 95%;
+    max-height: 49em;
+    max-width: 49em;
+    height: 98%;
     @extend .margin-lg;
-    @extend .flex;
+    @extend .flex-col;
+
+    #body {
+      @extend .flex;
+      @extend .flex-grow;
+    }
+
+    #footer {
+      @extend .flex-shrink;
+      @extend .border-top;
+      @extend .border-sm;
+      @extend .flex;
+      @extend .flex-end;
+    }
 
     #sidebar {
       @extend .flex-col;
-      flex-basis: 14em;
+      @extend .flex-shrink;
 
       > .container {
         @extend .padded;
@@ -206,8 +259,10 @@ html, body {
 
       #brand {
         @extend .bold;
-        @extend .text-xl;
+        @extend .text-lg;
         @extend .text-center;
+        @extend .margin-tb;
+        @extend .margin-lg-rlt;
       }
 
       #wallet {
@@ -223,14 +278,13 @@ html, body {
 
         button {
           @extend .margin-tb;
-          margin-right: 2em;
-          margin-left: 2em;
+          @extend .margin-xl-rl;
         }
       }
     }
 
     #page {
-      width: 31em;
+      flex: 1;
       margin-left: 1em;
     }
   }
@@ -239,6 +293,7 @@ html, body {
 // Muted theme
 #app {
   * {
+    font-family: "Times New Roman", Times, serif;
     //background-color: transparent;
     //background-color: white;
     color: black;
@@ -246,6 +301,7 @@ html, body {
   }
 
   button {
+    background-color: white;
     @extend .bordered;
     @extend .padded;
     @extend .text-md;

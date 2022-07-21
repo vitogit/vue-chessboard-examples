@@ -29,8 +29,10 @@ export default {
     async chooseMove(from, to) {
       console.log('Choose move', from, to);
       const san = this.tryMove(from+to);
+      if (!san) return;
       this.proposedMove = san;
       this.didChooseMove = true;
+      this.playAudio('Move');
     },
     async submitMove() {
       console.log('Submit move', this.proposedMove);
@@ -81,7 +83,7 @@ export default {
         @onMove='chooseMove'
       />
 
-      <div class='flex-1 flex-down'>
+      <div id='game-info' class='flex-1 flex-down'>
         <div class='flex-shrink bordered padded container'>
           <div id='contract-state' class='flex margin-tb'>
             <div class='flex-1 flex-center center-align'>
@@ -112,17 +114,17 @@ export default {
 
         <div v-if='isPlayer' class='flex-1 flex-down flex-center justify-end'>
           <button
-            class='margin margin-lg-rl'
+            class='margin margin-xl-rl'
             @click='submitMove'
             :disabled='disableControls || !didChooseMove'
           >Move</button>
           <button
-            class='margin margin-lg-rl'
+            class='margin margin-xl-rl'
             @click='resign'
             :disabled='disableControls'
           >Resign</button>
           <button
-            class='margin margin-lg-rl'
+            class='margin margin-xl-rl'
             :disabled='true'
           >Stalemate</button>
         </div>
@@ -166,7 +168,12 @@ export default {
 </template>
 
 <style lang='scss'>
+@import '../styles/flexbox';
+
 #chess-game {
+  #game-info {
+  }
+
   #game-controls {
     button {
       width: 6em;

@@ -5,7 +5,7 @@ export default ({
     truncAddress(addr) {
       // Ethereum Addresses
       if (addr.match(/0x[a-fA-F0-9]{40}/) != null) {
-        return `${addr.substring(0, 6)}...${addr.substring(38)}`
+        return `${addr.substring(0, 5)}..${addr.substring(39)}`
       } else {
         // TODO ENS domains and such still need to be trunced
         return addr;
