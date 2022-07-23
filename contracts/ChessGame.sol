@@ -9,7 +9,8 @@ contract ChessGame {
   address public immutable arbiter;
   address public immutable whitePlayer;
   address public immutable blackPlayer;
-  uint public immutable timePerMove;
+  uint public immutable timePerMove;      // Seconds per move
+  uint public timeOfLastMove;             // Seconds from the last move
   bool public isWhiteMove;
 
   // Moveflags
@@ -34,6 +35,13 @@ contract ChessGame {
     require(isWhiteMove ? (msg.sender == whitePlayer)
                         : (msg.sender == blackPlayer)
           , 'CurrentPlayerOnly');
+    _;
+  }
+
+  modifier isOtherPlayer() {
+    require(isWhiteMove ? (msg.sender == blackPlayer)
+                        : (msg.sender == whitePlayer)
+          , 'OtherPlayerOnly');
     _;
   }
 
@@ -62,8 +70,22 @@ contract ChessGame {
     _;
   }
 
+  function timeExpired() public view returns (bool) {
+    return block.timestamp > timeOfLastMove+timePerMove;
+  }
+
+  modifier timerExpired() {
+    require(timeExpired(), 'TimerStillActive');
+    _;
+  }
+
+  modifier timerActive() {
+    require(!timeExpired(), 'TimerExpired');
+    _;
+  }
+
   // FIXME Should check this is being created by the Lobby contract
-  constructor(address white, address black, uint movetime) public {
+  constructor(address white, address black, uint movetime) {
     challenge = msg.sender;
     lobby = Challenge(challenge).lobby();
     arbiter = Lobby(lobby).arbiter();
@@ -71,6 +93,7 @@ contract ChessGame {
     blackPlayer = black;
     timePerMove = movetime;
     isWhiteMove = true;
+    timeOfLastMove = block.timestamp;
     state = State.Started;
   }
 
@@ -103,7 +126,8 @@ contract ChessGame {
   }
   */
 
-  function move(string memory san, bytes1 flags) public inProgress currentPlayer {
+  function move(string memory san, bytes1 flags) public
+      inProgress currentPlayer timerActive {
     if (msg.sender == whitePlayer) whiteFlags = flags;
     else if (msg.sender == blackPlayer) blackFlags = flags;
     if ((stalemateMask & whiteFlags & blackFlags) > 0) {      // stalemate
@@ -113,6 +137,7 @@ contract ChessGame {
 
     isWhiteMove = !isWhiteMove;
     emit MoveSAN(msg.sender, san, flags);
+    timeOfLastMove = block.timestamp;
   }
 
   function resign() external inProgress playerOnly {
@@ -125,16 +150,26 @@ contract ChessGame {
     Lobby(lobby).disputeGame(msg.sender);
   }
 
-  function resolve(address winner, string memory comment) internal arbiterOnly inReview {
-    if (winner == whitePlayer) finish(GameOutcome.WhiteWon);
-    else if (winner == blackPlayer) finish(GameOutcome.BlackWon);
-    //else /* TODO */
+  function claim() external inProgress isOtherPlayer timerExpired {
+    if (msg.sender == whitePlayer) finish(GameOutcome.WhiteWon);
+    else if (msg.sender == blackPlayer) finish(GameOutcome.BlackWon);
+  }
+
+  function resolve(GameOutcome outcome, address winner, string memory comment)
+  public arbiterOnly inReview {
+    if (outcome == GameOutcome.WhiteWon) {
+      require(winner == whitePlayer, 'AddressMismatch');
+    } else if (outcome == GameOutcome.BlackWon) {
+      require(winner == blackPlayer, 'AddressMismatch');
+    }
+    finish(outcome);
     emit ArbiterAction(msg.sender, comment);
   }
 
-  function resolve(address winner) external arbiterOnly inReview {
-    if (winner == whitePlayer) resolve(winner, 'White won');
-    else if (winner == blackPlayer) resolve(winner, 'Black won');
-    //else /* TODO */
+  function resolve(GameOutcome outcome, address winner)
+  external arbiterOnly inReview {
+    if (outcome == GameOutcome.WhiteWon) resolve(outcome, winner, 'White won');
+    else if (outcome == GameOutcome.BlackWon) resolve(outcome, winner, 'Black won');
+    else if (outcome == GameOutcome.Draw) resolve(outcome, winner, 'Draw');
   }
 }

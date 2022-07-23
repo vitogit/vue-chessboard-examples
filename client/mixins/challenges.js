@@ -1,11 +1,8 @@
 import { Contract } from 'ethers';
 import ChallengeContract from '../contracts/Challenge';
-
 import { challengeStatus } from '../constants/bcl';
-
 import ethMixin from './ethereum';
 import walletMixin from './wallet';
-
 import useContractStore from '../stores/contracts';
 import useLobbyStore from '../stores/lobby';
 
@@ -29,7 +26,8 @@ export default ({
       p2Balance: 0,
       p1IsWhite: true,
       wagerAmount: 0,
-      timePerMove: 0
+      timePerMove: 0,
+      timeUnits: 'minutes'
     }
   },
   computed: {
@@ -54,7 +52,21 @@ export default ({
     whitePlayer() { return this.startingColor == 'white' ? this.address : this.opponent },
     blackPlayer() { return this.startingColor == 'black' ? this.address : this.opponent },
     currentBalance() { return this.isPlayer2 ? this.p2Balance : this.p1Balance },
-    opponentBalance() { return this.isPlayer2 ? this.p1Balance : this.p2Balance }
+    opponentBalance() { return this.isPlayer2 ? this.p1Balance : this.p2Balance },
+    displayTPM: {
+      get() {
+        if (this.timeUnits == 'minutes') { return Math.round(this.timePerMove/60) }
+        else if (this.timeUnits == 'hours') { return Math.round(this.timePerMove/(60*60)) }
+        else if (this.timeUnits == 'days') { return Math.round(this.timePerMove/(60*60*24)) }
+        else if (this.timeUnits == 'weeks') { return Math.round(this.timePerMove/(60*60*24*7)) }
+      },
+      set(val) {
+        if (this.timeUnits == 'minutes') { this.timePerMove = val*60 }
+        else if (this.timeUnits == 'hours') { this.timePerMove = val*60*60 }
+        else if (this.timeUnits == 'days') { this.timePerMove = val*60*60*24 }
+        else if (this.timeUnits == 'weeks') { this.timePerMove = val*60*60*24*7 }
+      }
+    }
   },
   methods: {
     async initChallenge(addr) {
@@ -67,20 +79,18 @@ export default ({
         this.sender,
         this.receiver,
         this.challengeStatus,
-        proposal] = await Promise.all([
+        this.p1IsWhite,
+        this.wagerAmount,
+        this.timePerMove] = await Promise.all([
           this.challenge.player1(),
           this.challenge.player2(),
           this.challenge.sender(),
           this.challenge.receiver(),
           this.challenge.state(),
-          this.challenge.proposal()
+          this.challenge.p1IsWhite(),
+          this.challenge.wagerAmount(),
+          this.challenge.timePerMove()
       ]);
-
-      [ this.p1IsWhite
-      , this.wagerAmount
-      , this.timePerMove ] = proposal;
-      this.refreshPlayerBalances();
-
       this.challengeLoaded = true;
     },
     async refreshPlayerBalances() {

@@ -8,16 +8,14 @@ contract Challenge {
   address public immutable player1;
   address public immutable player2;
   address public game;
-  struct GameParams {
-    bool p1IsWhite;
-    uint wagerAmount;
-    uint timePerMove;
-  }
-  GameParams public proposal;
+  bool public p1IsWhite;
+  uint public wagerAmount;
+  uint public timePerMove;
   // The receiver address get's passed back and forth
   // between the two players until one player accepts
   // the challenge
   address public sender;
+  // TODO Remove receiver.  We can use sender only.
   address public receiver;
 
   // FIXME Need an Expired state as well once you get to
@@ -50,31 +48,37 @@ contract Challenge {
   constructor(
     address p1,
     address p2,
-    bool p1IsWhite,
-    uint wagerAmount,
-    uint timePerMove
-  ) public {
+    bool startAsWhite,
+    uint wager,
+    uint timeout
+  ) {
     // TODO Should verify this is actually the lobby somehow
     lobby = msg.sender;
     player1 = p1;
     player2 = p2;
+    p1IsWhite = startAsWhite;
+    wagerAmount = wager;
+    timePerMove = timeout;
     // Set the sender and receiver
     sender = player1;
     receiver = player2;
-    // Create the proposal
-    proposal.p1IsWhite = p1IsWhite;
-    proposal.wagerAmount = wagerAmount;
-    proposal.timePerMove = timePerMove;
     // Set contract state to pending
     state = State.Pending;
   }
 
   function whitePlayer() public view returns (address) {
-    return proposal.p1IsWhite ? player1 : player2;
+    return p1IsWhite ? player1 : player2;
   }
 
   function blackPlayer() public view returns (address) {
-    return proposal.p1IsWhite ? player2 : player1;
+    return p1IsWhite ? player2 : player1;
+  }
+
+  function otherPlayer() private view returns (address) {
+    address white = whitePlayer();
+    address black = blackPlayer();
+    if (msg.sender == white) { return black; }
+    else if (msg.sender == black) { return white; }
   }
 
   // TODO Make this a modifier
@@ -90,37 +94,37 @@ contract Challenge {
     }
   }
 
-  function modify(bool p1IsWhite,
-                  uint wagerAmount,
-                  uint timePerMove)
+  function modify(bool _p1IsWhite,
+                  uint _wagerAmount,
+                  uint _timePerMove)
   external isPending playerOnly {
     setSenderReceiver();
-    proposal.p1IsWhite = p1IsWhite;
-    proposal.wagerAmount = wagerAmount;
-    proposal.timePerMove = timePerMove;
+    p1IsWhite = _p1IsWhite;
+    wagerAmount = _wagerAmount;
+    timePerMove = _timePerMove;
     emit ChallengeModified(msg.sender);
   }
 
   function cancel() external isPending senderOnly {
     setSenderReceiver();
     state = State.Canceled;
-    Lobby(lobby).cancel(msg.sender, state);
+    Lobby(lobby).updateChallenge(msg.sender, state);
   }
 
   function decline() external isPending receiverOnly {
     setSenderReceiver();
     state = State.Declined;
-    Lobby(lobby).cancel(msg.sender, state);
+    Lobby(lobby).updateChallenge(msg.sender, state);
   }
 
   function accept() external isPending receiverOnly {
     setSenderReceiver();
     state = State.Accepted;
-    // Create the game
+    Lobby(lobby).updateChallenge(msg.sender, state);
     address white = whitePlayer();
     address black = blackPlayer();
-    ChessGame _game = new ChessGame(white, black, proposal.timePerMove);
+    ChessGame _game = new ChessGame(white, black, timePerMove);
     game = address(_game);
-    Lobby(lobby).startGame(address(game), white, black);
+    Lobby(lobby).startGame(game, white, black);
   }
 }

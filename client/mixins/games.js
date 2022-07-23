@@ -1,15 +1,12 @@
 import _ from 'underscore';
 import { Chess, SQUARES } from 'chess.js';
-import { Contract } from 'ethers';
+import { Contract, BigNumber as BN } from 'ethers';
 import ChallengeContract from '../contracts/Challenge';
-
 import { gameStatus } from '../constants/bcl';
-
-import ethMixin from './ethereum';
-import walletMixin from './wallet';
-
 import useContractStore from '../stores/contracts';
 import useLobbyStore from '../stores/lobby';
+import ethMixin from './ethereum';
+import walletMixin from './wallet';
 
 export default ({
   mixins: [ ethMixin, walletMixin ],
@@ -27,8 +24,9 @@ export default ({
       whitePlayer: null,
       blackPlayer: null,
       isWhiteMove: true,
-      wagerAmount: 0,
-      timePerMove: 0,
+      wagerAmount: BN.from(0),
+      timePerMove: BN.from(0),
+      timeOfLastMove: BN.from(0),
       winner: null,
       halfmoves: 0,
       illegalMoves: []
@@ -98,22 +96,6 @@ export default ({
       return ((this.gameEngine.turn() === this.opponentColorAbv)
              && this.gameEngine.in_checkmate());
     },
-    inProgress() {
-      return this.gameStatus === gameStatus.started;
-    },
-    inReview() {
-      return this.gameStatus === gameStatus.review;
-    },
-    gameOver() {
-      //return this.isInCheckmate || this.opponentInCheckmate || this.isInStalemate;
-      return this.gameStatus > gameStatus.started;
-    },
-    isWinner() {
-      return this.winner === this.wallet.address;
-    },
-    isLoser() {
-      return this.winner === this.opponent;
-    },
     playerIllegalMoves() {
       return _.filter(this.illegalMoves, m => (m.player === this.wallet.address));
     },
@@ -135,7 +117,28 @@ export default ({
     fen() {
       this.halfmoves;         // Make reactive to halfmoves
       return this.gameEngine.fen();
-    }
+    },
+    timeOfExpiry() {
+      return this.timeOfLastMove.add(this.timePerMove)
+    },
+    inProgress() { return this.gameStatus === gameStatus.started },
+    inReview() { return this.gameStatus === gameStatus.review },
+    gameOver() {
+      //return this.isInCheckmate || this.opponentInCheckmate || this.isInStalemate;
+      return this.gameStatus > gameStatus.started
+          || this.isWinner
+          || this.isLoser
+    },
+    isWinner() {
+      return this.winner === this.wallet.address
+          || this.opponentInCheckmate
+          || this.opponentTimeExpired;
+    },
+    isLoser() {
+      return this.winner === this.opponent
+          || this.isInCheckmate
+          || this.playerTimeExpired;
+    },
   },
   methods: {
     async initGame(address) {
@@ -151,13 +154,15 @@ export default ({
         this.whitePlayer,
         this.blackPlayer,
         this.isWhiteMove,
-        this.timePerMove
+        this.timePerMove,
+        this.timeOfLastMove
       ] = await Promise.all([
           game.state(),
           game.whitePlayer(),
           game.blackPlayer(),
           game.isWhiteMove(),
-          game.timePerMove()
+          game.timePerMove(),
+          game.timeOfLastMove()
       ]);
 
       if (this.gameStatus === gameStatus.finished) {
@@ -191,6 +196,7 @@ export default ({
         if (ev.blockNumber > this.latestBlock) {
           // Play audio file when we get a move from either player
           this.playAudio('Blaster');
+          this.timeOfLastMove = await this.game.timeOfLastMove();
           // If the move is from the current player, then it will register twice.
           // We already called tryMove in the chooseMove function.
           if (player === this.opponent) this.tryMove(san);

@@ -38,19 +38,17 @@ export default {
   },
   methods: {
     async send() {
-      await this.challenge.modify(this.startAsWhite
+      await this.challenge.modify(this.p1IsWhite
                                 , this.wagerAmount
                                 , this.timePerMove);
       this.loading = true;
 
       // Listen for a new challenge and redirect
-      console.log('challenge', this.challenge.filters);
       const eventFilter = this.challenge.filters.ChallengeModified(this.wallet.address);
       this.challenge.once(eventFilter, player => {
         console.log('Modified challenge', this.challenge.address);
-        //this.lobby.modifiedChallenge(address, from, to, true);
         this.loading = false;
-        this.$router.push('/challenge/'+address);
+        this.$router.push('/challenge/'+this.challenge.address);
       });
     }
   },
@@ -125,19 +123,20 @@ export default {
           <div class='flex-1 flex-end'>
             <input
               class='margin-rl flex-1'
-              v-model='timePerMove'
+              v-model='displayTPM'
               placeholder='Enter a number'
             />
 
             <select
               id='tpm-units'
               name='tpm-units'
+              v-model='timeUnits'
               class='flex-shrink'
             >
               <option value='minutes'>Minutes</option>
               <option value='hours'>Hours</option>
               <option value='days'>Days</option>
-              <option value='days'>Weeks</option>
+              <option value='weeks'>Weeks</option>
             </select>
           </div>
         </div>

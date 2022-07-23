@@ -31,9 +31,9 @@ contract('Lobby', function (accounts) {
       it('Fires a CreatedChallenge event', async () => {
         const [ ev ] = _.filter(tx.logs, l => l.event === 'CreatedChallenge');
         expect(ev).to.be.ok;
-        expect(ev).to.have.nested.property('args.challenge');
         expect(ev).to.have.nested.property('args.player1', from);
         expect(ev).to.have.nested.property('args.player2', to);
+        expect(ev).to.have.nested.property('args.challenge');
       });
 
       // FIXME Create a game manually if you can and pass that instead of

@@ -1,4 +1,5 @@
 const _ = require('underscore');
+const sleep = require('sleep-promise');
 const Lobby = artifacts.require("Lobby");
 const Challenge = artifacts.require("Challenge");
 const ChessGame = artifacts.require('ChessGame');
@@ -228,6 +229,38 @@ contract('ChessGame', function (accounts) {
     });
   });
 
+  describe('timer expires', () => {
+    before(async () => {
+      tx = await lobby.challenge(p2, 1, 0, 1, { from: p1 });
+      expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
+      challenge = await Challenge.at(tx.logs[0].args.challenge);
+      await challenge.accept({ from: p2 });
+      game = await challenge.game().then(ChessGame.at);
+      white = await game.whitePlayer();
+      black = await game.blackPlayer();
+    });
+
+    it('timer didn\'t expire yet', async () => {
+      const didExpire = await game.timeExpired();
+      expect(didExpire).to.be.false;
+    });
+
+    it('white waits for timer expiry and tries to move', async () => {
+      try {
+        await sleep(1001);
+        await movePiece(white);
+        assert.fail('The contract should have failed');
+      } catch (err) {
+        expect(err.reason).to.equal('TimerExpired');
+      }
+    });
+
+    it('reports the time has expired', async () => {
+      const didExpire = await game.timeExpired();
+      expect(didExpire).to.be.true;
+    });
+  });
+
   describe('players agree to stalemate', () => {
     before(async () => {
       tx = await lobby.challenge(p2, 1, 0, 10, { from: p1 });
@@ -235,16 +268,8 @@ contract('ChessGame', function (accounts) {
       challenge = await Challenge.at(tx.logs[0].args.challenge);
       await challenge.accept({ from: p2 });
       game = await challenge.game().then(ChessGame.at);
-    });
-
-    it('white is p1', async function () {
       white = await game.whitePlayer();
-      expect(white).to.equal(p1);
-    });
-
-    it('black is p2', async function () {
       black = await game.blackPlayer();
-      expect(black).to.equal(p2);
     });
 
     describe('white moves and signals stalemate', () => {
@@ -317,16 +342,8 @@ contract('ChessGame', function (accounts) {
       challenge = await Challenge.at(tx.logs[0].args.challenge);
       await challenge.accept({ from: p2 });
       game = await challenge.game().then(ChessGame.at);
-    });
-
-    it('white is p1', async function () {
       white = await game.whitePlayer();
-      expect(white).to.equal(p1);
-    });
-
-    it('black is p2', async function () {
       black = await game.blackPlayer();
-      expect(black).to.equal(p2);
     });
 
     describe('white tries an illegal move', () => {
@@ -344,7 +361,7 @@ contract('ChessGame', function (accounts) {
 
       it('arbiter can\'t rule on the outcome yet', async () => {
         try {
-          await game.resolve(black, { from: arbiter });
+          await game.resolve(2, black, { from: arbiter });
           assert.fail('The contract should have failed');
         } catch (err) {
           expect(err.reason).to.equal('InvalidContractState');
@@ -389,7 +406,7 @@ contract('ChessGame', function (accounts) {
       it('players can\'t resolve the dispute', async () => {
         for (var p of [ p1, p2, p3 ]) {
           try {
-            await game.resolve(black, { from: p });
+            await game.resolve(2, black, 'test', { from: p });
             assert.fail('The contract should have failed');
           } catch (err) {
             expect(err.reason).to.equal('ArbiterOnly');
@@ -400,7 +417,7 @@ contract('ChessGame', function (accounts) {
 
     describe('arbiter resolves the game for black', () => {
       before(async () => {
-        tx = await game.resolve(black, { from: arbiter });
+        tx = await game.resolve(2, black, 'test', { from: arbiter });
       });
 
       it('changes the game state to Finished', async () => {
@@ -421,7 +438,7 @@ contract('ChessGame', function (accounts) {
       it('fires a ArbiterAction event', async () => {
         const [ ev ] = _.filter(tx.logs, l => l.event === 'ArbiterAction');
         expect(ev).to.have.nested.property('args.arbiter', arbiter);
-        expect(ev).to.have.nested.property('args.comment', 'Black won');
+        expect(ev).to.have.nested.property('args.comment', 'test');
       });
 
       it('lobby sends a GameFinished event', async function () {
@@ -435,7 +452,7 @@ contract('ChessGame', function (accounts) {
 
       it('arbiter can\'t change the outcome now', async () => {
         try {
-          await game.resolve(white, { from: arbiter });
+          await game.resolve(1, white, { from: arbiter });
           assert.fail('The contract should have failed');
         } catch (err) {
           expect(err.reason).to.equal('InvalidContractState');
@@ -451,16 +468,8 @@ contract('ChessGame', function (accounts) {
       challenge = await Challenge.at(tx.logs[0].args.challenge);
       await challenge.accept({ from: p2 });
       game = await challenge.game().then(ChessGame.at);
-    });
-
-    it('white is p1', async function () {
       white = await game.whitePlayer();
-      expect(white).to.equal(p1);
-    });
-
-    it('black is p2', async function () {
       black = await game.blackPlayer();
-      expect(black).to.equal(p2);
     });
 
     describe('white makes a legal move', () => {
@@ -495,7 +504,7 @@ contract('ChessGame', function (accounts) {
 
     describe('arbiter resolves the game for white', () => {
       before(async () => {
-        tx = await game.resolve(white, { from: arbiter });
+        tx = await game.resolve(1, white, 'test', { from: arbiter });
       });
 
       it('changes the game state to Finished', async () => {
@@ -516,7 +525,7 @@ contract('ChessGame', function (accounts) {
       it('fires a ArbiterAction event', async () => {
         const [ ev ] = _.filter(tx.logs, l => l.event === 'ArbiterAction');
         expect(ev).to.have.nested.property('args.arbiter', arbiter);
-        expect(ev).to.have.nested.property('args.comment', 'White won');
+        expect(ev).to.have.nested.property('args.comment', 'test');
       });
 
       it('lobby sends a GameFinished event', async function () {
@@ -526,6 +535,70 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.have.nested.property('args.game', game.address);
         expect(ev).to.have.deep.nested.property('args.outcome', toBN(1));
         expect(ev).to.have.nested.property('args.winner', white);
+      });
+    });
+  });
+
+  describe('arbiter settles game as draw', () => {
+    before(async () => {
+      tx = await lobby.challenge(p2, 1, 0, 10, { from: p1 });
+      expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
+      challenge = await Challenge.at(tx.logs[0].args.challenge);
+      await challenge.accept({ from: p2 });
+      game = await challenge.game().then(ChessGame.at);
+      white = await game.whitePlayer();
+      black = await game.blackPlayer();
+    });
+
+    describe('white disputes the game', () => {
+      before(async () => {
+        tx = await game.dispute({ from: white });
+      });
+
+      it('changes the game state to Review', async () => {
+        const state = await game.state();
+        expect(state).to.eql(toBN(3));
+      });
+
+      it('doesn\'t set any winner', async () => {
+        const outcome = await game.outcome();
+        expect(outcome).to.eql(toBN(0));
+      });
+    });
+
+    describe('arbiter resolves the game as a draw', () => {
+      before(async () => {
+        tx = await game.resolve(3, '0x0000000000000000000000000000000000000000', 'test draw', { from: arbiter });
+      });
+
+      it('changes the game state to Finished', async () => {
+        const state = await game.state();
+        expect(state).to.eql(toBN(1));
+      });
+
+      it('Sets the outcome to Draw', async () => {
+        const outcome = await game.outcome();
+        expect(outcome).to.eql(toBN(3));
+      });
+
+      it('Set\'s no winner', async () => {
+        const winner = await game.winner();
+        expect(winner).to.equal('0x0000000000000000000000000000000000000000');
+      });
+
+      it('fires a ArbiterAction event', async () => {
+        const [ ev ] = _.filter(tx.logs, l => l.event === 'ArbiterAction');
+        expect(ev).to.have.nested.property('args.arbiter', arbiter);
+        expect(ev).to.have.nested.property('args.comment', 'test draw');
+      });
+
+      it('lobby sends a GameFinished event', async function () {
+        const logs = await lobby.getPastEvents();
+        const [ ev ] = _.filter(logs, l => l.event === 'GameFinished');
+        expect(ev).to.be.ok;
+        expect(ev).to.have.nested.property('args.game', game.address);
+        expect(ev).to.have.deep.nested.property('args.outcome', toBN(3));
+        expect(ev).to.have.nested.property('args.winner');
       });
     });
   });

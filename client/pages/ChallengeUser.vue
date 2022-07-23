@@ -13,8 +13,17 @@ export default {
   data () {
     return {
       waiting: false,
-      wagerAmount: 0,
-      timePerMove: 15,
+      timePerMove: 15
+    }
+  },
+  computed: {
+    // After the challenge is sent, this will always be in seconds, so you parse
+    // it differently.  Use displayTPM on other pages for the conversion.
+    secondsPerMove() {
+      if (this.timeUnits == 'minutes') { return this.timePerMove*60 }
+      else if (this.timeUnits == 'hours') { return this.timePerMove*60*60 }
+      else if (this.timeUnits == 'days') { return this.timePerMove*60*60*24 }
+      else if (this.timeUnits == 'weeks') { return this.timePerMove*60*60*24*7 }
     }
   },
   methods: {
@@ -29,7 +38,7 @@ export default {
       await lobby.challenge(this.opponent
                           , this.p1IsWhite
                           , this.wagerAmount
-                          , this.timePerMove);
+                          , this.secondsPerMove);
       this.waiting = true;
 
       // Listen for a new challenge and redirect
@@ -123,12 +132,13 @@ export default {
           <select
             id='tpm-units'
             name='tpm-units'
+            v-model='timeUnits'
             class='flex-shrink'
           >
             <option value='minutes'>Minutes</option>
-            <option value='hours' disabled>Hours</option>
-            <option value='days' disabled>Days</option>
-            <option value='days' disabled>Weeks</option>
+            <option value='hours'>Hours</option>
+            <option value='days'>Days</option>
+            <option value='weeks'>Weeks</option>
           </select>
         </div>
       </div>

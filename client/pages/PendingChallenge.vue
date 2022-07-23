@@ -118,8 +118,7 @@ export default {
       <div id='time-per-move' class='flex margin-tb'>
         <div class='flex-shrink center-align text-ml text-bold'>Time Per Move</div>
         <div class='flex-1 flex-end center-align'>
-          <div class='margin-rl'>{{ timePerMove }}</div>
-          <div>Minutes</div>
+          <div class='text-caps'>{{ displayTPM }} {{ timeUnits }}</div>
         </div>
       </div>
     </div>

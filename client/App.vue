@@ -84,16 +84,17 @@ export default {
         console.log('Initializing new challenge', addr);
         const contract = this.contracts.registerChallenge(addr);
         const [
-          status, player1, player2, sender, receiver, proposal
+          status, player1, player2, sender, receiver, p1IsWhite, wagerAmount, timePerMove
         ] = await Promise.all([
             contract.state(),
             contract.player1(),
             contract.player2(),
             contract.sender(),
             contract.receiver(),
-            contract.proposal()
+            contract.p1IsWhite(),
+            contract.wagerAmount(),
+            contract.timePerMove()
         ]);
-        const [ p1IsWhite, wagerAmount, timePerMove ] = proposal;
         this.lobby.metadata[addr] = {
           status, player1, player2, sender, receiver, p1IsWhite, wagerAmount, timePerMove
         };
@@ -185,6 +186,7 @@ export default {
         <router-view v-if='!loading' class='flex-1' />
       </div>
     </div>
+
     <div id='footer'>
       <div class='flex flex-grow'>
         <div class='text-sm margin-sm'>Currently deployed on Goerli Testnet.</div>
@@ -238,6 +240,7 @@ html, body {
     #body {
       @extend .flex;
       @extend .flex-grow;
+      margin-bottom: 1em;
     }
 
     #footer {
@@ -262,7 +265,7 @@ html, body {
         @extend .text-lg;
         @extend .text-center;
         @extend .margin-tb;
-        @extend .margin-lg-rlt;
+        @extend .margin-lg-rl;
       }
 
       #wallet {
