@@ -27,8 +27,6 @@ contract ChessGame {
   State public state;
 
   event MoveSAN(address indexed player, string san, bytes1 flags);
-  //event MovedPiece(address indexed player, bytes1 from, bytes1 to);
-  //event CapturedPiece(address indexed player, bytes2 from, bytes2 to);
   event ArbiterAction(address indexed arbiter, string comment);
 
   modifier currentPlayer() {
@@ -97,11 +95,11 @@ contract ChessGame {
     state = State.Started;
   }
 
-  function isWhitePlayer() private returns (bool) {
+  function isWhitePlayer() private view returns (bool) {
     return (msg.sender == whitePlayer);
   }
 
-  function otherPlayer() private returns (address) {
+  function otherPlayer() private view returns (address) {
     if (msg.sender == whitePlayer) { return blackPlayer; }
     else if (msg.sender == blackPlayer) { return whitePlayer; }
   }
@@ -111,10 +109,11 @@ contract ChessGame {
     else if (outcome == GameOutcome.BlackWon) return blackPlayer;
   }
 
-  function finish(GameOutcome result) private {
-    outcome = result;
+  function finish(GameOutcome _outcome) private {
+    outcome = _outcome;
     state = State.Finished;
-    Lobby(lobby).finishGame(result, winner());
+    Challenge(challenge).disburse(_outcome, winner());
+    Lobby(lobby).finishGame(_outcome, winner());
   }
 
   /* Probably going to be easier this way once you implement bitboards
@@ -155,21 +154,21 @@ contract ChessGame {
     else if (msg.sender == blackPlayer) finish(GameOutcome.BlackWon);
   }
 
-  function resolve(GameOutcome outcome, address winner, string memory comment)
-  public arbiterOnly inReview {
-    if (outcome == GameOutcome.WhiteWon) {
-      require(winner == whitePlayer, 'AddressMismatch');
-    } else if (outcome == GameOutcome.BlackWon) {
-      require(winner == blackPlayer, 'AddressMismatch');
+  function resolve(GameOutcome _outcome, address _winner, string memory comment)
+  public inReview arbiterOnly {
+    if (_outcome == GameOutcome.WhiteWon) {
+      require(_winner == whitePlayer, 'AddressMismatch');
+    } else if (_outcome == GameOutcome.BlackWon) {
+      require(_winner == blackPlayer, 'AddressMismatch');
     }
-    finish(outcome);
+    finish(_outcome);
     emit ArbiterAction(msg.sender, comment);
   }
 
-  function resolve(GameOutcome outcome, address winner)
-  external arbiterOnly inReview {
-    if (outcome == GameOutcome.WhiteWon) resolve(outcome, winner, 'White won');
-    else if (outcome == GameOutcome.BlackWon) resolve(outcome, winner, 'Black won');
-    else if (outcome == GameOutcome.Draw) resolve(outcome, winner, 'Draw');
+  function resolve(GameOutcome _outcome, address _winner)
+  external inReview arbiterOnly {
+    if (_outcome == GameOutcome.WhiteWon) resolve(_outcome, _winner, 'White won');
+    else if (_outcome == GameOutcome.BlackWon) resolve(_outcome, _winner, 'Black won');
+    else if (_outcome == GameOutcome.Draw) resolve(_outcome, _winner, 'Draw');
   }
 }

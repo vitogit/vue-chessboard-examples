@@ -19,7 +19,6 @@ contract Lobby {
   event GameFinished(address indexed game
                    , address indexed winner
                    , ChessGame.GameOutcome outcome);
-  // We probably want to index the receiver as well
   event GameDisputed(address indexed game
                    , address indexed player);
 
@@ -42,32 +41,39 @@ contract Lobby {
     arbiter = _arbiter;
   }
 
-  function challenge(address player2, bool startAsWhite, uint wagerAmount, uint timePerMove)
-  external {
-    Challenge _challenge = new Challenge(msg.sender
-                                       , player2
-                                       , startAsWhite
-                                       , wagerAmount
-                                       , timePerMove);
+  function challenge(
+    address _player2,
+    bool _startAsWhite,
+    uint _wagerAmount,
+    uint _timePerMove
+  ) external payable {
+    require(msg.value >= _wagerAmount, 'InvalidDepositAmount');
+    require(_timePerMove >= 60, 'InvalidTimePerMove');
+    Challenge _challenge = (new Challenge){ value: msg.value }(
+                                            payable(msg.sender)
+                                          , payable(_player2)
+                                          , _startAsWhite
+                                          , _wagerAmount
+                                          , _timePerMove);
     challenges[address(_challenge)] = ChallengeMetadata(Challenge.State.Pending
                                                       , address(0)
                                                       , true);
-    emit CreatedChallenge(address(_challenge), msg.sender, player2);
+    emit CreatedChallenge(address(_challenge), msg.sender, _player2);
   }
 
-  function updateChallenge(address player, Challenge.State state)
+  function updateChallenge(address _player, Challenge.State _state)
   external isCurrentChallenge {
     address _challenge = msg.sender;
-    if (state == Challenge.State.Accepted) {
-      emit AcceptedChallenge(_challenge, player);
-    } else if (state == Challenge.State.Canceled
-            || state == Challenge.State.Declined) {
+    if (_state == Challenge.State.Accepted) {
+      emit AcceptedChallenge(_challenge, _player);
+    } else if (_state == Challenge.State.Canceled
+            || _state == Challenge.State.Declined) {
       delete challenges[_challenge];
-      emit CanceledChallenge(_challenge, player);
+      emit CanceledChallenge(_challenge, _player);
     }
   }
 
-  function startGame(address _game, address whitePlayer, address blackPlayer)
+  function startGame(address _game, address _whitePlayer, address _blackPlayer)
   external isCurrentChallenge {
     address _challenge = msg.sender;
     games[_game] = GameMetadata(ChessGame.State.Started
@@ -76,22 +82,21 @@ contract Lobby {
     challenges[_challenge] = ChallengeMetadata(Challenge(_challenge).state()
                                              , _game
                                              , true);
-    emit GameStarted(_game, whitePlayer, blackPlayer);
+    emit GameStarted(_game, _whitePlayer, _blackPlayer);
   }
 
-  function finishGame(ChessGame.GameOutcome outcome, address winner)
+  function finishGame(ChessGame.GameOutcome _outcome, address _winner)
   external isCurrentGame {
     address _game = msg.sender;
     address _challenge = games[_game].challenge;
-    // TODO Unlock funds from the challenge
     delete games[_game];
     delete challenges[_challenge];
-    emit GameFinished(_game, winner, outcome);
+    emit GameFinished(_game, _winner, _outcome);
   }
 
-  function disputeGame(address player)
+  function disputeGame(address _player)
   external isCurrentGame {
     address _game = msg.sender;
-    emit GameDisputed(_game, player);
+    emit GameDisputed(_game, _player);
   }
 }

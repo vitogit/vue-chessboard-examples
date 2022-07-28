@@ -3,11 +3,13 @@ const sleep = require('sleep-promise');
 const Lobby = artifacts.require("Lobby");
 const Challenge = artifacts.require("Challenge");
 const ChessGame = artifacts.require('ChessGame');
-const { toBN } = web3.utils;
+const { getBalance } = web3.eth;
+const { toBN, toWei } = web3.utils;
 
 contract('ChessGame', function (accounts) {
   let [ arbiter, p1, p2, p3 ] = accounts;
   let lobby, challenge, game, tx, white, black;
+  const wager = toBN(toWei('1', 'ether'));
 
   before(async () => { lobby = await Lobby.deployed() });
 
@@ -22,10 +24,10 @@ contract('ChessGame', function (accounts) {
 
   describe('p1 -> p2 as white', () => {
     before(async () => {
-      tx = await lobby.challenge(p2, 1, 0, 10, { from: p1 });
+      tx = await lobby.challenge(p2, 1, wager, 60, { from: p1, value: wager });
       expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
       challenge = await Challenge.at(tx.logs[0].args.challenge);
-      await challenge.accept({ from: p2 });
+      await challenge.accept({ from: p2, value: wager });
       game = await challenge.game().then(ChessGame.at);
     });
 
@@ -143,7 +145,10 @@ contract('ChessGame', function (accounts) {
     });
 
     describe('white resigns during white move', () => {
+      let startingBalance;
+
       before(async () => {
+        startingBalance = await getBalance(black).then(Number);
         const whiteMove = await game.isWhiteMove();
         expect(whiteMove).to.equal(true);
         tx = await game.resign({ from: white });
@@ -159,7 +164,7 @@ contract('ChessGame', function (accounts) {
         expect(winner).to.equal(black);
       });
 
-      it('lobby sends a GameFinished event', async function () {
+      it('lobby sends a GameFinished event', async () => {
         const logs = await lobby.getPastEvents();
         const [ ev ] = _.filter(logs, l => l.event === 'GameFinished');
         expect(ev).to.be.ok;
@@ -167,15 +172,20 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.have.deep.nested.property('args.outcome', toBN(2));
         expect(ev).to.have.nested.property('args.winner', black);
       });
+
+      it('sends both wagers to black', async () => {
+        const balance = await getBalance(black).then(Number);
+        expect(balance).to.equal(startingBalance+2*Number(wager));
+      });
     });
   });
 
   describe('p2 -> p1 as black', () => {
     before(async () => {
-      tx = await lobby.challenge(p1, 0, 0, 10, { from: p2 });
+      tx = await lobby.challenge(p1, 0, wager, 60, { from: p2, value: wager });
       expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
       challenge = await Challenge.at(tx.logs[0].args.challenge);
-      await challenge.accept({ from: p1 });
+      await challenge.accept({ from: p1, value: wager });
       game = await challenge.game().then(ChessGame.at);
     });
 
@@ -198,11 +208,11 @@ contract('ChessGame', function (accounts) {
       expect(ev).to.have.nested.property('args.blackPlayer', p2);
     });
 
-    describe('white moves', () => { /* TODO */ });
-    describe('black moves', () => { /* TODO */ });
-
     describe('black resigns during white move', () => {
+      let startingBalance;
+
       before(async () => {
+        startingBalance = await getBalance(white).then(Number);
         const whiteMove = await game.isWhiteMove();
         expect(whiteMove).to.equal(true);
         tx = await game.resign({ from: black });
@@ -226,47 +236,22 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.have.deep.nested.property('args.outcome', toBN(1));
         expect(ev).to.have.nested.property('args.winner', white);
       });
-    });
-  });
 
-  describe('timer expires', () => {
-    before(async () => {
-      tx = await lobby.challenge(p2, 1, 0, 1, { from: p1 });
-      expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
-      challenge = await Challenge.at(tx.logs[0].args.challenge);
-      await challenge.accept({ from: p2 });
-      game = await challenge.game().then(ChessGame.at);
-      white = await game.whitePlayer();
-      black = await game.blackPlayer();
-    });
-
-    it('timer didn\'t expire yet', async () => {
-      const didExpire = await game.timeExpired();
-      expect(didExpire).to.be.false;
-    });
-
-    it('white waits for timer expiry and tries to move', async () => {
-      try {
-        await sleep(1001);
-        await movePiece(white);
-        assert.fail('The contract should have failed');
-      } catch (err) {
-        expect(err.reason).to.equal('TimerExpired');
-      }
-    });
-
-    it('reports the time has expired', async () => {
-      const didExpire = await game.timeExpired();
-      expect(didExpire).to.be.true;
+      it('sends both wagers to white', async () => {
+        const balance = await getBalance(white).then(Number);
+        expect(balance).to.equal(startingBalance+2*Number(wager));
+      });
     });
   });
 
   describe('players agree to stalemate', () => {
+    let startBalWhite, startBalBlack;
+
     before(async () => {
-      tx = await lobby.challenge(p2, 1, 0, 10, { from: p1 });
+      tx = await lobby.challenge(p2, 1, wager, 60, { from: p1, value: wager });
       expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
       challenge = await Challenge.at(tx.logs[0].args.challenge);
-      await challenge.accept({ from: p2 });
+      await challenge.accept({ from: p2, value: wager });
       game = await challenge.game().then(ChessGame.at);
       white = await game.whitePlayer();
       black = await game.blackPlayer();
@@ -274,6 +259,7 @@ contract('ChessGame', function (accounts) {
 
     describe('white moves and signals stalemate', () => {
       before(async () => {
+        startBalWhite = await getBalance(white).then(Number);
         tx = await movePiece(white, null, flags='0x04');
       });
 
@@ -296,11 +282,14 @@ contract('ChessGame', function (accounts) {
       });
     });
 
+    // Would be good to test that you can revoke stalemate by not
+    // signaling on your next move
     describe('black moves without signaling stalemate', () => { /* TODO */ });
     describe('white moves and signals stalemate again', () => { /* TODO */ });
 
     describe('black moves and signals stalemate', () => {
       before(async () => {
+        startBalBlack = await getBalance(black).then(Number);
         tx = await movePiece(black, null, flags='0x04');
       });
 
@@ -332,15 +321,104 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.have.deep.nested.property('args.outcome', toBN(3));
         expect(ev).to.have.nested.property('args.winner', '0x0000000000000000000000000000000000000000');
       });
+
+      it('returns wager to white player', async () => {
+        const balance = await getBalance(white).then(Number);
+        expect(balance).to.be.within(startBalWhite
+                                     , startBalWhite+Number(wager));
+      });
+
+      it('returns wager to black player', async () => {
+        const balance = await getBalance(black).then(Number);
+        expect(balance).to.be.within(startBalBlack
+                                     , startBalBlack+Number(wager));
+      });
+    });
+  });
+
+  // NOTE: This test takes forever.  You can skip it most the time.
+  describe.skip('timer expires', () => {
+  //describe('timer expires', () => {
+    before(async () => {
+      tx = await lobby.challenge(p2, 1, wager, 60, { from: p1, value: wager });
+      expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
+      challenge = await Challenge.at(tx.logs[0].args.challenge);
+      await challenge.accept({ from: p2, value: wager });
+      game = await challenge.game().then(ChessGame.at);
+      white = await game.whitePlayer();
+      black = await game.blackPlayer();
+    });
+
+    it('timer didn\'t expire yet', async () => {
+      const didExpire = await game.timeExpired();
+      expect(didExpire).to.be.false;
+    });
+
+    it('black tries to claim victory before the timer expires', async () => {
+      try {
+        await game.claim({ from: black });
+        assert.fail('Contract should have failed');
+      } catch(err) {
+        expect(err.reason).to.equal('TimerStillActive');
+      }
+    });
+
+    it('white waits for timer expiry and tries to move', async () => {
+      try {
+        await sleep(60001);
+        await movePiece(white);
+        assert.fail('The contract should have failed');
+      } catch (err) {
+        expect(err.reason).to.equal('TimerExpired');
+      }
+    });
+
+    it('white tries to claim victory', async () => {
+      try {
+        await game.claim({ from: white });
+        assert.fail('Contract should have failed');
+      } catch(err) {
+        expect(err.reason).to.equal('OtherPlayerOnly');
+      }
+    });
+
+    it('reports the time has expired', async () => {
+      const didExpire = await game.timeExpired();
+      expect(didExpire).to.be.true;
+    });
+
+    describe('black claims victory', () => {
+      let startingBalance;
+
+      before(async () => {
+        startingBalance = await getBalance(black).then(Number);
+        await game.claim({ from: black });
+      });
+
+      it('sets the game outcome to BlackWon', async () => {
+        const outcome = await game.outcome();
+        expect(outcome).to.eql(toBN(2));
+      });
+
+      it('sets the winner to black', async () => {
+        const winner = await game.winner();
+        expect(winner).to.equal(black);
+      });
+
+      it('sends both wagers to black', async () => {
+        const balance = await getBalance(black).then(Number);
+        expect(balance).to.be.within(startingBalance
+                                   , startingBalance+2*Number(wager));
+      });
     });
   });
 
   describe('disputing an illegal move', () => {
     before(async () => {
-      tx = await lobby.challenge(p2, 1, 0, 10, { from: p1 });
+      tx = await lobby.challenge(p2, 1, wager, 60, { from: p1, value: wager });
       expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
       challenge = await Challenge.at(tx.logs[0].args.challenge);
-      await challenge.accept({ from: p2 });
+      await challenge.accept({ from: p2, value: wager });
       game = await challenge.game().then(ChessGame.at);
       white = await game.whitePlayer();
       black = await game.blackPlayer();
@@ -413,10 +491,18 @@ contract('ChessGame', function (accounts) {
           }
         }
       });
+
+      it('contract keeps the wagers for now', async () => {
+        const balance = await getBalance(challenge.address).then(Number);
+        expect(balance).to.be.equal(2*Number(wager));
+      });
     });
 
     describe('arbiter resolves the game for black', () => {
+      let startingBalance;
+
       before(async () => {
+        startingBalance = await getBalance(black).then(Number);
         tx = await game.resolve(2, black, 'test', { from: arbiter });
       });
 
@@ -458,15 +544,20 @@ contract('ChessGame', function (accounts) {
           expect(err.reason).to.equal('InvalidContractState');
         }
       });
+
+      it('award both wagers to black', async () => {
+        const balance = await getBalance(black).then(Number);
+        expect(balance).to.equal(startingBalance+2*Number(wager));
+      });
     });
   });
 
   describe('handling a phony dispute', () => {
     before(async () => {
-      tx = await lobby.challenge(p2, 1, 0, 10, { from: p1 });
+      tx = await lobby.challenge(p2, 1, wager, 60, { from: p1, value: wager });
       expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
       challenge = await Challenge.at(tx.logs[0].args.challenge);
-      await challenge.accept({ from: p2 });
+      await challenge.accept({ from: p2, value: wager });
       game = await challenge.game().then(ChessGame.at);
       white = await game.whitePlayer();
       black = await game.blackPlayer();
@@ -500,10 +591,18 @@ contract('ChessGame', function (accounts) {
         const outcome = await game.outcome();
         expect(outcome).to.eql(toBN(0));
       });
+
+      it('contract keeps the wagers for now', async () => {
+        const balance = await getBalance(challenge.address).then(Number);
+        expect(balance).to.be.equal(2*Number(wager));
+      });
     });
 
     describe('arbiter resolves the game for white', () => {
+      let startingBalance;
+
       before(async () => {
+        startingBalance = await getBalance(white).then(Number);
         tx = await game.resolve(1, white, 'test', { from: arbiter });
       });
 
@@ -536,15 +635,20 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.have.deep.nested.property('args.outcome', toBN(1));
         expect(ev).to.have.nested.property('args.winner', white);
       });
+
+      it('award both wagers to white', async () => {
+        const balance = await getBalance(white).then(Number);
+        expect(balance).to.equal(startingBalance+2*Number(wager));
+      });
     });
   });
 
   describe('arbiter settles game as draw', () => {
     before(async () => {
-      tx = await lobby.challenge(p2, 1, 0, 10, { from: p1 });
+      tx = await lobby.challenge(p2, 1, wager, 60, { from: p1, value: wager });
       expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
       challenge = await Challenge.at(tx.logs[0].args.challenge);
-      await challenge.accept({ from: p2 });
+      await challenge.accept({ from: p2, value: wager });
       game = await challenge.game().then(ChessGame.at);
       white = await game.whitePlayer();
       black = await game.blackPlayer();
@@ -564,10 +668,19 @@ contract('ChessGame', function (accounts) {
         const outcome = await game.outcome();
         expect(outcome).to.eql(toBN(0));
       });
+
+      it('contract keeps the wagers for now', async () => {
+        const balance = await getBalance(challenge.address).then(Number);
+        expect(balance).to.be.equal(2*Number(wager));
+      });
     });
 
     describe('arbiter resolves the game as a draw', () => {
+      let startBalWhite, startBalBlack;
+
       before(async () => {
+        startBalWhite = await getBalance(white).then(Number);
+        startBalBlack = await getBalance(black).then(Number);
         tx = await game.resolve(3, '0x0000000000000000000000000000000000000000', 'test draw', { from: arbiter });
       });
 
@@ -599,6 +712,18 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.have.nested.property('args.game', game.address);
         expect(ev).to.have.deep.nested.property('args.outcome', toBN(3));
         expect(ev).to.have.nested.property('args.winner');
+      });
+
+      it('returns wager to white player', async () => {
+        const balance = await getBalance(white).then(Number);
+        expect(balance).to.be.within(startBalWhite
+                                     , startBalWhite+Number(wager));
+      });
+
+      it('returns wager to black player', async () => {
+        const balance = await getBalance(black).then(Number);
+        expect(balance).to.be.within(startBalBlack
+                                     , startBalBlack+Number(wager));
       });
     });
   });
