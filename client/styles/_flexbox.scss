@@ -28,6 +28,11 @@
   justify-content: space-around;
 }
 
+.flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+
 .align-center, .center-align {
   display: flex;
   align-items: center;

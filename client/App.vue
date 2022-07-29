@@ -105,6 +105,10 @@ export default {
         }
         return addr;
       }));
+      this.listenForChallenges((addr, from) => {
+        console.log('Received incoming challenge from', from);
+        this.playAudio('NewChallenge');
+      });
       this.lobby.challenges = pending;
       console.log('Initialized pending challenges');
 
@@ -113,7 +117,7 @@ export default {
       const games = await Promise.all(_.map(Array.from(accepted), async addr => {
         console.log('Initializing new game', addr);
         const contract = await this.contracts.registerGame(addr);
-        const [ status, white, black, isWhiteMove, timePerMove ] = await Promise.all([
+        const [ status, whitePlayer, blackPlayer, isWhiteMove, timePerMove ] = await Promise.all([
           contract.state(),
           contract.whitePlayer(),
           contract.blackPlayer(),
@@ -121,7 +125,7 @@ export default {
           contract.timePerMove()
         ]);
         this.lobby.metadata[addr] = {
-          status, white, black , isWhiteMove, timePerMove
+          status, whitePlayer, blackPlayer, isWhiteMove, timePerMove
         };
         if (status === gameStatus.started) started.add(addr);
         else if (status === gameStatus.finished) finished.add(addr);
@@ -206,7 +210,6 @@ export default {
           viewBox='0 0 64 64'
           width='14'
           height='14'
-          @click='() => $emit("onClose")'
         />
       </a>
       <a href='https://github.com/jjduhamel/bcl/issues/new?template=bug_report.md'>
@@ -215,7 +218,6 @@ export default {
           viewBox='0 0 32 32'
           width='14'
           height='14'
-          @click='() => $emit("onClose")'
         />
       </a>
     </div>
@@ -290,42 +292,6 @@ html, body {
       flex: 1;
       margin-left: 1em;
     }
-  }
-}
-
-// Muted theme
-#app {
-  * {
-    font-family: "Times New Roman", Times, serif;
-    //background-color: transparent;
-    //background-color: white;
-    color: black;
-    border-color: black;
-  }
-
-  button {
-    background-color: white;
-    @extend .bordered;
-    @extend .padded;
-    @extend .text-md;
-  }
-
-  button:disabled {
-    color: lightgrey;
-    border-color: lightgrey;
-  }
-
-  input {
-    @extend .bordered;
-    @extend .padded;
-    @extend .text-md;
-  }
-
-  select {
-    @extend .bordered;
-    @extend .padded;
-    @extend .text-md;
-    text-align: center;
   }
 }
 </style>

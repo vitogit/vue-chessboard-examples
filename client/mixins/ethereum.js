@@ -1,7 +1,12 @@
 import { formatEther, parseEther } from 'ethers/lib/utils';
 
+// TODO Rename to utility mixin
 export default ({
   methods: {
+    playAudio(clip) {
+      const audio = new Audio(`/sound/${clip}.mp3`);
+      audio.play();
+    },
     truncAddress(addr) {
       // Ethereum Addresses
       if (addr.match(/0x[a-fA-F0-9]{40}/) != null) {
@@ -11,6 +16,7 @@ export default ({
         return addr;
       }
     },
+    formatBalance(bal) { return parseEther(bal) },
     async fetchBalance(addr) {
       const balance = await this.provider.getBalance(addr);
       return balance;

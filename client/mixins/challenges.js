@@ -1,4 +1,5 @@
 import { Contract } from 'ethers';
+import { formatEther, parseEther } from 'ethers/lib/utils';
 import ChallengeContract from '../contracts/Challenge';
 import { challengeStatus } from '../constants/bcl';
 import ethMixin from './ethereum';
@@ -20,39 +21,70 @@ export default ({
       challengeStatus: 0,
       sender: null,
       receiver: null,
+      // player 1
       player1: null,
-      player2: null,
+      p1Handle: null,
       p1Balance: 0,
+      // player 2
+      player2: null,
+      p2Handle: null,
       p2Balance: 0,
+      // challenge options
       p1IsWhite: true,
       wagerAmount: 0,
-      timePerMove: 0,
+      //wagerToken: null,
+      timePerMove: 15*60,
       timeUnits: 'minutes'
     }
   },
   computed: {
     isSender() { return this.address === this.sender },
     isReceiver() { return this.address === this.receiver },
-    isPlayer() {
-      return (this.address === this.player1)
-          || (this.address === this.player2);
+    isPlayer() { return (this.address === this.player1)
+                     || (this.address === this.player2);
     },
     isPlayer1() { return this.address === this.player1 },
     isPlayer2() { return this.address === this.player2 },
     p1Color() { return this.p1IsWhite ? 'white' : 'black' },
     p2Color() { return this.p1IsWhite ? 'black' : 'white' },
+    statusPending() { return this.challengeStatus === challengeStatus.pending },
     // NOTE The order of these is chosen so that it will default to
     //      the current player defaults to player 1 is no account is
     //      authenticated
-    statusPending() { return this.challengeStatus === challengeStatus.pending },
     currentPlayer() { return this.isPlayer2 ? this.player2 : this.player1 },
-    opponent() { return this.isPlayer2 ? this.player1 : this.player2 },
+    playerHandle() { return this.isPlayer2 ? this.p2Handle : this.p1Handle },
+    playerBalance() { return this.isPlayer2 ? this.p2Balance : this.p1Balance },
+    currentBalance() { return this.playerBalance },
     startingColor() { return this.isPlayer2 ? this.p2Color : this.p1Color },
-    opponentColor() { return this.isPlayer1 ? this.p2Color : this.p1Color },
-    whitePlayer() { return this.startingColor == 'white' ? this.address : this.opponent },
-    blackPlayer() { return this.startingColor == 'black' ? this.address : this.opponent },
-    currentBalance() { return this.isPlayer2 ? this.p2Balance : this.p1Balance },
+    balanceDiff() {
+      if (this.playerBalance < this.wagerAmount) return this.wagerAmount.sub(this.playerBalance);
+      else return 0;
+    },
+    extraBalance() {
+      if (this.playerBalance > this.wagerAmount) return this.playerBalance.sub(this.wagerAmount);
+      else return 0;
+    },
+    //extraBalance() { return 0 },
+    opponent() { return this.isPlayer2 ? this.player1 : this.player2 },
+    opponentHandle() { return this.isPlayer2 ? this.p1Handle : this.p2Handle },
     opponentBalance() { return this.isPlayer2 ? this.p1Balance : this.p2Balance },
+    opponentColor() { return this.isPlayer1 ? this.p2Color : this.p1Color },
+    startAsWhite: {
+      get() {
+        if (this.isPlayer1) return this.p1IsWhite;
+        else if (this.isPlayer2) return !this.p1IsWhite;
+        else throw new Error('Is not a player');
+      },
+      set(val) {
+        if (this.isPlayer1) this.p1IsWhite = val;
+        else if (this.isPlayer2) this.p1IsWhite = !val;
+      }
+    },
+    startAsBlack() { return !this.startAsWhite },
+    displayWager: {
+      get() { return formatEther(this.wagerAmount) },
+      set(val) { this.wagerAmount = parseEther(val) }
+    },
     displayTPM: {
       get() {
         if (this.timeUnits == 'minutes') { return Math.round(this.timePerMove/60) }
@@ -72,10 +104,15 @@ export default ({
     async initChallenge(addr) {
       console.log('Initialize challenge contract data', addr);
       this.challenge = this.contracts.challenge(addr);
-
-      let proposal;
+      await this.refreshChallenge();
+      this.challengeLoaded = true;
+    },
+    async refreshChallenge() {
+      console.log('Refresh challenge data');
       [ this.player1,
+        this.p1Balance,
         this.player2,
+        this.p2Balance,
         this.sender,
         this.receiver,
         this.challengeStatus,
@@ -83,7 +120,9 @@ export default ({
         this.wagerAmount,
         this.timePerMove] = await Promise.all([
           this.challenge.player1(),
+          this.challenge.p1Balance(),
           this.challenge.player2(),
+          this.challenge.p2Balance(),
           this.challenge.sender(),
           this.challenge.receiver(),
           this.challenge.state(),
@@ -91,7 +130,32 @@ export default ({
           this.challenge.wagerAmount(),
           this.challenge.timePerMove()
       ]);
-      this.challengeLoaded = true;
+
+      try {
+        this.p1Handle = await this.wallet.provider.lookupAddress(this.player1);
+        this.p2Handle = await this.wallet.provider.lookupAddress(this.player2);
+      } catch {}
+      if (!this.p1Handle) this.truncAddress(this.player1);
+      if (!this.p2Handle) this.truncAddress(this.player2);
+
+      // Calculate which time units to use
+      if (this.timePerMove > 60*60*24*7) this.timeUnits = 'weeks';
+      else if (this.timePerMove > 60*60*24) this.timeUnits = 'days';
+      else if (this.timePerMove > 60*60) this.timeUnits = 'hours';
+      else this.timeUnits = 'minutes';
+    },
+    listenForChallenges(cb) {
+      const { lobby } = this.contracts;
+      const eventFilter = lobby.filters.CreatedChallenge(null
+                                                       , null
+                                                       , this.wallet.address);
+      lobby.on(eventFilter, (addr, from, to, ev) => {
+        console.log('Received challenge', addr);
+        //if (ev.blockNumber > this.latestBlock) {
+          let out = this.lobby.newChallenge(addr, from, to);
+          if (cb) cb(addr, from, to);
+        //}
+      });
     },
     async refreshPlayerBalances() {
       if (!this.player1 || !this.player2) {

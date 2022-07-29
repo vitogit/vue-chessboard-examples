@@ -1,14 +1,16 @@
 <script>
 import _ from 'underscore';
 import humanizeDuration from 'humanize-duration';
-import CloseIcon from 'bytesize-icons/dist/icons/close.svg';
+import TrashIcon from 'bytesize-icons/dist/icons/trash.svg';
+import FlagIcon from 'bytesize-icons/dist/icons/flag.svg';
+import BanIcon from 'bytesize-icons/dist/icons/ban.svg';
 import gameMixin from '../mixins/games';
 import ChessBoard from '../components/ChessBoard';
 import Modal from '../components/Modal';
 
 export default {
   name: 'ChessGame',
-  components: { ChessBoard, CloseIcon, Modal },
+  components: { ChessBoard, Modal, TrashIcon, FlagIcon, BanIcon },
   mixins: [ gameMixin ],
   data() {
     return {
@@ -42,6 +44,7 @@ export default {
       this.ticks;
       return Date.now()/1000 > this.timeOfExpiry;
     },
+    // Need to override this to make it reactive to ticks
     timeUntilExpiry() {
       this.ticks;
       return Math.floor(this.timeOfExpiry - Date.now()/1000);
@@ -123,13 +126,13 @@ export default {
   created() {
     const { contract } = this.$route.params;
     this.initGame(contract)
-        .then(this.listenForMoves)
         .then(() => {
           if (this.inProgress) {
             // Start the timer at the nearest second
             const timeout = 1000 - Date.now()%1000;
             setTimeout(() => setInterval(() => this.ticks++, 1000), timeout);
             if (this.playerTimeExpired) this.showModal = true;
+            this.listenForMoves(() => this.playAudio('Blaster'));
           }
         });
   }
@@ -150,36 +153,52 @@ export default {
         @onMove='chooseMove'
       />
 
-      <div id='game-info' class='flex-1 flex-down'>
-        <div class='flex-shrink bordered padded container'>
-          <div id='contract-state' class='flex margin-tb'>
-            <div class='flex-1 flex-center center-align'>
-              <div v-if='isWinner' class='text-sentance'>You Won!</div>
-              <div v-else-if='isLoser' class='text-sentance'>You Lost</div>
-              <div v-else-if='inProgress' class='text-sentance'>In Progress</div>
-              <div v-else class='text-sentance'>{{ formatGameStatus(gameStatus) }}</div>
-            </div>
+      <div class='flex-1 flex-down'>
+        <div id='game-info' class='flex-shrink bordered padded container text-center'>
+          <div id='contract-state' class='text-center text-ml'>
+            <div v-if='isWinner' class='text-sentance'>You Won!</div>
+            <div v-else-if='isLoser' class='text-sentance'>You Lost</div>
+            <div v-else-if='inProgress' class='text-sentance'>In Progress</div>
+            <div v-else class='text-sentance'>{{ formatGameStatus(gameStatus) }}</div>
           </div>
 
-          <div id='current-move' class='flex margin-tb'>
-            <div class='flex-1 flex-center center-align'>
+          <div class='text-ms margin-tb'>
+            <div id='current-move'>
               <div v-if='gameOver' class='text-sentance'>Game Over</div>
               <div v-else-if='didChooseMove' class='text-sentance'>Submit Move</div>
               <div v-else-if='isCurrentMove' class='text-sentance'>Your Move</div>
               <div v-else-if='isOpponentsMove' class='text-sentance'>Opponent's Move</div>
               <div v-else class='text-sentance'>Spectating</div>
             </div>
+            <div id='opponent'>
+              {{ truncAddress(opponent) }}
+            </div>
           </div>
 
-          <div id='time-per-move' class='flex margin-tb'>
-            <div class='flex-1 flex-center center-align'>
-              <div v-if='!timerExpired' class='text-caps'>{{ displayTimer }}</div>
-              <div v-else>Time Expired</div>
-            </div>
+          <div id='time-per-move'>
+            <div v-if='!timerExpired'>{{ displayTimer }}</div>
+            <div v-else>Time Expired</div>
           </div>
         </div>
 
         <div v-if='isPlayer' class='flex-1 flex-down flex-center justify-end'>
+          <div id='controlbar' class='flex-between margin margin-xl-rl'>
+            <button :disabled='true'>
+              <TrashIcon />
+            </button>
+
+            <button :disabled='true'>
+              <FlagIcon />
+            </button>
+
+            <button
+              @click='resign'
+              :disabled='disableControls'
+            >
+              <BanIcon viewBox='0 0 32 32' />
+            </button>
+          </div>
+
           <button
             v-if='inProgress && opponentTimeExpired'
             class='margin margin-xl-rl'
@@ -192,18 +211,15 @@ export default {
             @click='submitMove'
             :disabled='disableControls || !didChooseMove'
           >Move</button>
-
-          <button
-            class='margin margin-xl-rl'
-            @click='resign'
-            :disabled='disableControls'
-          >Resign</button>
         </div>
       </div>
     </div>
 
     <div v-if='showModal'>
-      <Modal v-if='inProgress && isInCheckmate' title='Checkmate!' @onClose='closeModal'>
+      <Modal
+          v-if='inProgress && isInCheckmate'
+          title='Checkmate!'
+          @close='closeModal'>
         <div class='margin-lg-tb'>
         Oh no, you're in checkmate!  That's ok, you can try again.  Please resign now and save your opponent some time and gas fees.
         </div>
@@ -217,7 +233,7 @@ export default {
         </template>
       </Modal>
 
-      <Modal v-else-if='playerTimeExpired' title='Out of Time!' @onClose='closeModal'>
+      <Modal v-else-if='playerTimeExpired' title='Out of Time!' @close='closeModal'>
         <div class='margin-lg-tb'>
         Oh no, you ran out of time!  That's ok, you can try again.  Please resign now and save your opponent some gas fees.
         </div>
@@ -231,7 +247,7 @@ export default {
         </template>
       </Modal>
 
-      <Modal v-else-if='playerHasIllegalMoves' title='Whoops...' @onClose='closeModal'>
+      <Modal v-else-if='playerHasIllegalMoves' title='Whoops...' @close='closeModal'>
         <div class='margin-lg-tb'>
         You submitted an illegal move.  If you encountered this in error, please contact the arbiters and we'll look into the issue.  Please resign now.
         </div>
@@ -241,7 +257,7 @@ export default {
         </template>
       </Modal>
 
-      <Modal v-else-if='opponentHasIllegalMoves' title='Oh My God!' @onClose='closeModal'>
+      <Modal v-else-if='opponentHasIllegalMoves' title='Oh My God!' @close='closeModal'>
         <div class='margin-lg-tb'>
         Your opponent submitted an illegal move.  Please dispute the move and an arbiter will review the game and declare you the winner.  We're sorry for the inconvenience.  Please play again.
         </div>
@@ -256,6 +272,20 @@ export default {
 
 <style lang='scss'>
 #chess-game {
+  #controlbar {
+    button {
+      margin: 0;
+      padding: 0;
+      border: none;
+      background-color: transparent;
+
+      svg {
+        width: 2em;
+        height: 2em;
+      }
+    }
+  }
+
   #game-controls {
     button {
       width: 6em;

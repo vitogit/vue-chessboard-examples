@@ -1,0 +1,37 @@
+// Muted theme
+#app {
+  * {
+    font-family: "Times New Roman", Times, serif;
+    //background-color: transparent;
+    //background-color: white;
+    color: black;
+    border-color: black;
+  }
+
+  button {
+    background-color: white;
+    @extend .bordered;
+    @extend .padded;
+    @extend .text-md;
+  }
+
+  button:disabled {
+    color: lightgrey;
+    border-color: lightgrey;
+  }
+
+  input {
+    @extend .bordered;
+    @extend .padded;
+    @extend .text-md;
+    background-color: transparent;
+  }
+
+  select {
+    @extend .bordered;
+    @extend .padded;
+    @extend .text-md;
+    text-align: center;
+    background-color: transparent;
+  }
+}

@@ -15,6 +15,9 @@ module.exports = {
   configureWebpack: {
     module: {
       rules: [{
+        test: /assets\/icons\/.*\.svg$/,
+        loader: 'vue-svg-loader'
+      }, {
         test: /bytesize-icons\/.*\.svg$/,
         loader: 'vue-svg-loader'
       }, {

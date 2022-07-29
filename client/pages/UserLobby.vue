@@ -2,9 +2,12 @@
 import _ from 'underscore';
 import { isAddress, getAddress } from 'ethers/lib/utils';
 import challengeMixin from '../mixins/challenges';
+import ChallengeCard from '../containers/ChallengeCard';
+import GameCard from '../containers/GameCard';
 
 export default {
   name: 'UserLobby',
+  components: { ChallengeCard, GameCard },
   mixins: [ challengeMixin ],
   data () {
     return {
@@ -37,11 +40,23 @@ export default {
     currentGames() {
       return _.filter([ ...this.lobby.games ], addr => {
         const metadata = this.lobby.metadata[addr];
-        if (!metadata) {
-          console.error('No metadata for', addr);
-          return false;
-        }
         return this.lobby.metadata[addr].status === 0;
+      });
+    },
+    playersTurn() {
+      return _.filter([ ...this.lobby.games ], addr => {
+        const metadata = this.lobby.metadata[addr];
+        const { isWhiteMove, whitePlayer, blackPlayer } = this.lobby.metadata[addr];
+        if (this.wallet.address === whitePlayer) return isWhiteMove;
+        else if (this.wallet.address === blackPlayer) return !isWhiteMove;
+      });
+    },
+    opponentsTurn() {
+      return _.filter([ ...this.lobby.games ], addr => {
+        const metadata = this.lobby.metadata[addr];
+        const { isWhiteMove, whitePlayer, blackPlayer } = this.lobby.metadata[addr];
+        if (this.wallet.address === whitePlayer) return !isWhiteMove;
+        else if (this.wallet.address === blackPlayer) return isWhiteMove;
       });
     },
     playerHistory() {
@@ -60,69 +75,64 @@ export default {
   },
   methods: {
     async search() {
+      let addr;
       if (isAddress(this.query)) {
-        this.$router.push('/profile/'+getAddress(this.query));
+        addr = this.query;
       } else {
-        alert('Please enter a valid address');
+        addr = await this.wallet.provider.resolveName(this.query);
+        if (!addr) {
+          // TODO Redirect to some error page or show a modal
+          throw Error(`Invalid lookup address ${this.query}`);
+        }
       }
+      this.$router.push('/profile/'+getAddress(addr));
     }
-  },
-  created() {
   }
 }
 </script>
 
 <template>
   <div id='lobby'>
-    <div class='text-xl margin-tb'>Lobby</div>
+    <div class='text-xl margin-tb'>Lounge</div>
 
-    <div id='player-lookup'>
-      <input
-        v-model='query'
-        placeholder='ETH Address / ENS Domain'
-      />
-      <button
-        class='margin-rl'
-        :disabled='!isValidAddress'
-        @click='search'
-      >Go</button>
-    </div>
+      <form id='player-lookup' class='margin-lg-tb'>
+        <input
+          type='text'
+          v-model='query'
+          placeholder='ETH Address / ENS Domain'
+        />
+        <button
+          class='margin-rl'
+          @click='search'
+        >Search</button>
+      </form>
 
-    <div id='pending-challenges'>
-      <div class='text-lg margin-lg-tb'>Pending Challenges</div>
+    <div class='text-lg margin-tb'>Challenges</div>
+    <div id='challenges' class='flex-1 flex-wrap'>
       <router-link
-        v-for='c in pendingChallenges'
-        :key='`waiting-${c}`'
+        v-for='c in [ ...pendingChallenges, ...waitingChallenges ]'
+        class='margin'
+        :key='`challenge-${c}`'
         :to='"/challenge/"+c'
       >
-        {{ c }}
+        <ChallengeCard :contract='c' />
       </router-link>
     </div>
 
-    <div id='waiting-challenges'>
-      <div class='text-lg margin-lg-tb'>Awaiting Response</div>
+    <div class='text-lg margin-tb'>Games</div>
+    <div id='games' class='flex flex-wrap'>
       <router-link
-        v-for='c in waitingChallenges'
-        :key='`waiting-${c}`'
-        :to='"/challenge/"+c'
-      >
-        {{ c }}
-      </router-link>
-    </div>
-
-    <div id='open-games'>
-      <div class='text-lg margin-lg-tb'>In-progress Games</div>
-      <router-link
-        v-for='g in currentGames'
-        :key='`in-progress-${g}`'
+        v-for='g in [ ...playersTurn, ...opponentsTurn ]'
+        class='margin'
+        :key='`game-${g}`'
         :to='"/game/"+g'
       >
-        {{ g }}
+        <GameCard :contract='g' />
       </router-link>
     </div>
 
-    <div id='history'>
-      <div class='text-lg margin-lg-tb'>History</div>
+    <div class='text-lg margin-tb'>History</div>
+    <div id='history' class='flex flex-wrap'>
       <router-link
         v-for='g in playerHistory'
         :key='`history-${g}`'

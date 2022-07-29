@@ -52,8 +52,12 @@ export default ({
       if (this.isPlayer) return this.isWhitePlayer ? 'b' : 'w';
       else return 'x';
     },
+    playerColor() { 
+      if (this.isWhitePlayer) return 'white';
+      else if (this.isBlackPlayer) return 'black';
+      else return 'spectator';
+    },
     orientation() {
-      // Default white
       return this.playerColorAbv == 'b' ? 'black' : 'white'
     },
     currentMove() { return this.isWhiteMove ? 'white' : 'black' },
@@ -121,6 +125,9 @@ export default ({
     timeOfExpiry() {
       return this.timeOfLastMove.add(this.timePerMove)
     },
+    timeUntilExpiry() {
+      return Math.floor(this.timeOfExpiry - Date.now()/1000);
+    },
     inProgress() { return this.gameStatus === gameStatus.started },
     inReview() { return this.gameStatus === gameStatus.review },
     gameOver() {
@@ -184,22 +191,25 @@ export default ({
     async refreshGame() {
       console.log('Refresh game data');
       [ this.gameStatus,
-        this.isWhiteMove
+        this.isWhiteMove,
+        this.timeOfLastMove
       ] = await Promise.all([
-          this.game.state(),
-          this.game.isWhiteMove()
+        this.game.state(),
+        this.game.isWhiteMove(),
+        this.game.timeOfLastMove()
       ]);
+      this.lobby.metadata[this.game.address].status = this.gameStatus;
+      this.lobby.metadata[this.game.address].isWhiteMove = this.isWhiteMove;
     },
-    listenForMoves() {
+    listenForMoves(cb) {
       const eventFilter = this.game.filters.MoveSAN([ this.wallet.address, this.opponent ]);
       this.game.on(eventFilter, async (player, san, flags, ev) => {
         if (ev.blockNumber > this.latestBlock) {
-          // Play audio file when we get a move from either player
-          this.playAudio('Blaster');
-          this.timeOfLastMove = await this.game.timeOfLastMove();
+          this.refreshGame();
           // If the move is from the current player, then it will register twice.
           // We already called tryMove in the chooseMove function.
           if (player === this.opponent) this.tryMove(san);
+          if (cb) cb(player, san, flags);
         }
       });
     },
@@ -217,10 +227,6 @@ export default ({
       this.isWhiteMove = !this.isWhiteMove;
       this.halfmoves++;
       return move.san;
-    },
-    playAudio(clip) {
-      const audio = new Audio(`/sound/${clip}.mp3`);
-      audio.play();
     },
     printGameStatus() {
       if (this.opponentInCheckmate) {

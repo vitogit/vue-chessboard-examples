@@ -5,33 +5,35 @@ export default {
   name: 'Modal',
   components: { CloseIcon },
   props: [ 'title' ],
-  emits: [ 'onClose' ]
+  emits: [ 'close' ]
 };
 </script>
 
 <template>
-    <div class='modal flex-down'>
-      <div class='bordered container'>
-        <div class='flex'>
-          <div class='flex-1'></div>
-          <div class='flex-2 text-lg text-center'>{{ title }}</div>
-          <div class='flex-1 flex-end align-center'>
-            <CloseIcon
-              viewBox='0 0 32 32'
-              width='16'
-              height='16'
-              @click='() => $emit("onClose")'
-            />
-          </div>
-        </div>
-
-        <slot />
-
-        <div class='flex flex-center'>
-          <slot name='controls' />
+  <div class='modal flex-down'>
+    <div class='bordered container'>
+      <div class='flex'>
+        <div class='flex-1'></div>
+        <div class='flex-grow text-lg text-center'>{{ title }}</div>
+        <div class='flex-1 flex-end align-center'>
+          <CloseIcon
+            viewBox='0 0 32 32'
+            width='16'
+            height='16'
+            @click='$emit("close")'
+          />
         </div>
       </div>
+
+      <div class='margin-lg-tb'>
+        <slot />
+      </div>
+
+      <div class='flex flex-center'>
+        <slot name='controls' />
+      </div>
     </div>
+  </div>
 </template>
 
 <style lang='scss'>
@@ -51,7 +53,8 @@ export default {
   .container {
     position: relative;
     width: 100%;
-    max-width: 20em;
+    //max-width: 20em;
+    max-width: 22em;
     padding: 1em;
     margin: 1em;
     background-color: white;

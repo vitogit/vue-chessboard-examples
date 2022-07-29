@@ -7,9 +7,7 @@ import App from './App.vue';
 import LobbyPage from './pages/UserLobby';
 import ProfilePage from './pages/PlayerProfile';
 //import UserProfile from './pages/UserProfile';
-import ChallengePage from './pages/ChallengeUser';
 import PendingChallenge from './pages/PendingChallenge';
-import ModifyChallenge from './pages/ModifyChallenge';
 import ChessGame from './pages/ChessGame';
 import AboutPage from './pages/AboutPage';
 import PlayAiPage from './pages/PlayComputer';
@@ -28,10 +26,8 @@ window.vm = new Vue({
       { path: '/', redirect: '/ai' },
       { path: '/ai', component: PlayAiPage },
       { path: '/lobby', component: LobbyPage },
-      { path: '/profile/:player', component: ProfilePage },
-      { path: '/new-challenge/:player', component: ChallengePage },
+      { path: '/profile/:address', component: ProfilePage },
       { path: '/challenge/:contract', component: PendingChallenge },
-      { path: '/modify/:contract', component: ModifyChallenge },
       { path: '/game/:contract', component: ChessGame },
       { path: '/about', component: AboutPage },
       { path: '/settings', component: SettingsPage },
