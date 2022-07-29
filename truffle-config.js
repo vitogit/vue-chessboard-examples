@@ -34,6 +34,7 @@ module.exports = {
       provider: () => new HDWalletProvider(mnemonic, `https://goerli.infura.io/v3/2185ad08ea904e85b06c383c4cd6b902`),
       network_id: '5',
       gas: 4465030,
+      gasPrice: 20000000000,  // 20 gwei (in wei) (default: 100 gwei)
       confirmations: 2,    // # of confirmations to wait between deployments. (default: 0)
       timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
     },
@@ -77,13 +78,13 @@ module.exports = {
     solc: {
       version: "0.8.15",      // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
-      // settings: {          // See the solidity docs for advice about optimization and evmVersion
-      //  optimizer: {
-      //    enabled: false,
-      //    runs: 200
-      //  },
-      //  evmVersion: "byzantium"
-      // }
+      settings: {          // See the solidity docs for advice about optimization and evmVersion
+       optimizer: {
+         enabled: true,
+         runs: 200
+       },
+       //evmVersion: "byzantium"
+      }
     }
   },
 

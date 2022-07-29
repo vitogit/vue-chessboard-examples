@@ -80,15 +80,6 @@ contract Challenge {
     _;
   }
 
-  modifier playerIsFunded() {
-    if (msg.sender == player1) {
-      require(p1Balance >= wagerAmount, 'InsufficientPlayerFunds');
-    } else {
-      require(p2Balance >= wagerAmount, 'InsufficientPlayerFunds');
-    }
-    _;
-  }
-
   modifier bothPlayersFunded() {
     require(p1Balance >= wagerAmount
          && p2Balance >= wagerAmount
@@ -126,6 +117,13 @@ contract Challenge {
     address black = blackPlayer();
     if (msg.sender == white) { return black; }
     else if (msg.sender == black) { return white; }
+    else return address(0);
+  }
+
+  function playerBalance() private view returns (uint) {
+    if (msg.sender == player1) return p1Balance;
+    else if (msg.sender == player2) return p2Balance;
+    else return 0;
   }
 
   function refund() private {
@@ -155,7 +153,8 @@ contract Challenge {
                   uint _wagerAmount,
                   uint _timePerMove)
   external payable
-  isPending playerOnly updateFunds playerIsFunded setSenderReceiver {
+  isPending playerOnly updateFunds setSenderReceiver {
+    require(playerBalance() >= _wagerAmount, 'InsufficientPlayerFunds');
     p1IsWhite = _p1IsWhite;
     wagerAmount = _wagerAmount;
     timePerMove = _timePerMove;

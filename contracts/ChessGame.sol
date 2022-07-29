@@ -100,13 +100,15 @@ contract ChessGame {
   }
 
   function otherPlayer() private view returns (address) {
-    if (msg.sender == whitePlayer) { return blackPlayer; }
-    else if (msg.sender == blackPlayer) { return whitePlayer; }
+    if (msg.sender == whitePlayer) return blackPlayer;
+    else if (msg.sender == blackPlayer) return whitePlayer;
+    else return address(0);
   }
 
   function winner() public view isFinished returns (address) {
     if (outcome == GameOutcome.WhiteWon) return whitePlayer;
     else if (outcome == GameOutcome.BlackWon) return blackPlayer;
+    else return address(0);
   }
 
   function finish(GameOutcome _outcome) private {
