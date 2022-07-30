@@ -4,7 +4,8 @@ import './Challenge.sol';
 import './ChessGame.sol';
 
 contract Lobby {
-  address public immutable arbiter;
+  bool private initialized;
+  address public arbiter;
 
   event CreatedChallenge(address challenge
                        , address indexed player1
@@ -37,7 +38,14 @@ contract Lobby {
     _;
   }
 
-  constructor(address _arbiter) {
+  modifier arbiterOnly() {
+    require(msg.sender == arbiter, 'ArbiterOnly');
+    _;
+  }
+
+  function initialize(address _arbiter) public {
+    require(!initialized, 'Contract was already initialized');
+    initialized = true;
     arbiter = _arbiter;
   }
 
@@ -98,5 +106,9 @@ contract Lobby {
   external isCurrentGame {
     address _game = msg.sender;
     emit GameDisputed(_game, _player);
+  }
+
+  function changeArbiter(address _arbiter) external arbiterOnly {
+    arbiter = _arbiter;
   }
 }

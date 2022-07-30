@@ -30,6 +30,15 @@ module.exports = {
      port: 9545,
      network_id: "*",       // Any network (default: none)
     },
+    rinkeby: {
+      provider: () => new HDWalletProvider(mnemonic, 'https://rinkeby.infura.io/v3/2185ad08ea904e85b06c383c4cd6b902'),
+      network_id: '4',
+      gas: 5500000,
+      //gasPrice: 20000000000,  // 20 gwei (in wei) (default: 100 gwei)
+      confirmations: 2,    // # of confirmations to wait between deployments. (default: 0)
+      timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+      skipDryRun: true
+    },
     goerli: {
       provider: () => new HDWalletProvider(mnemonic, `https://goerli.infura.io/v3/2185ad08ea904e85b06c383c4cd6b902`),
       network_id: '5',

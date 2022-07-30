@@ -269,7 +269,7 @@ contract('Challenge', accounts => {
     });
   });
 
-  describe('p1 -> p2, p2 modifies with higher wager', () => {
+  describe('p1 -> p2, p1 modifies with higher wager', () => {
     const newWager = toBN(toWei('2', 'ether'));
 
     before(async () => {
@@ -296,32 +296,10 @@ contract('Challenge', accounts => {
       });
     });
 
-    describe('p2 modifies the challenge', async () => {
-      before(async () => {
-        tx = await challenge.modify(false, newWager, 30, { from: p2, value: newWager });
-      });
-
-      it('switches the sender and receiver', async () => {
-        const sender = await challenge.sender();
-        expect(sender).to.equal(p2);
-        const receiver = await challenge.receiver();
-        expect(receiver).to.equal(p1);
-      });
-
-      it('sets correct proposal', async () => {
-        const p1IsWhite = await challenge.p1IsWhite();
-        const wagerAmount = await challenge.wagerAmount();
-        const timePerMove = await challenge.timePerMove();
-        expect(p1IsWhite).to.equal(false);
-        expect(wagerAmount).to.eql(newWager);
-        expect(timePerMove).to.eql(toBN(30));
-      });
-    });
-
-    describe('p1 tries to accept without sending more funds', () => {
+    describe('p1 tries to modify without sending funds', () => {
       it('throws an InsufficientPlayerFunds error', async () => {
         try {
-          await challenge.accept({ from: p1 });
+          await challenge.modify(false, newWager, 30, { from: p1 });
           assert.fail('Contract should have failed');
         } catch(err) {
           expect(err.reason).to.equal('InsufficientPlayerFunds');
@@ -329,37 +307,9 @@ contract('Challenge', accounts => {
       });
     });
 
-    describe('p1 accepts', () => {
-      before(async () => {
-        tx = await challenge.accept({ from: p1, value: wager });
-      });
-
-      it('keeps all the balance in the contract', async () => {
-        const balance = await getBalance(challenge.address).then(Number);
-        expect(balance).to.equal(2*newWager);
-      });
-    });
-  });
-
-  describe('p1 -> p2, p1 modifies with lower wager', () => {
-    const newWager = toBN(toWei('0.5', 'ether'));
-
-    before(async () => {
-      tx = await lobby.challenge(p2, true, wager, 60, { from: p1, value: wager });
-      expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
-      challenge = await Challenge.at(tx.logs[0].args.challenge);
-    });
-
-    it('sets the sender and receiver', async () => {
-      const sender = await challenge.sender();
-      expect(sender).to.equal(p1);
-      const receiver = await challenge.receiver();
-      expect(receiver).to.equal(p2);
-    });
-
     describe('p1 modifies the challenge', async () => {
       before(async () => {
-        tx = await challenge.modify(false, newWager, 120, { from: p1 });
+        tx = await challenge.modify(false, newWager, 30, { from: p1, value: wager });
       });
 
       it('doesn\'t switch the sender and receiver', async () => {
@@ -375,16 +325,77 @@ contract('Challenge', accounts => {
         const timePerMove = await challenge.timePerMove();
         expect(p1IsWhite).to.equal(false);
         expect(wagerAmount).to.eql(newWager);
-        expect(timePerMove).to.eql(toBN(120));
+        expect(timePerMove).to.eql(toBN(30));
+      });
+    });
+
+    describe('p2 tries to accept without sending more funds', () => {
+      it('throws an InsufficientPlayerFunds error', async () => {
+        try {
+          await challenge.accept({ from: p2 });
+          assert.fail('Contract should have failed');
+        } catch(err) {
+          expect(err.reason).to.equal('InsufficientPlayerFunds');
+        }
       });
     });
 
     describe('p2 accepts', () => {
+      before(async () => {
+        tx = await challenge.accept({ from: p2, value: newWager });
+      });
+
+      it('keeps all the balance in the contract', async () => {
+        const balance = await getBalance(challenge.address).then(Number);
+        expect(balance).to.equal(2*newWager);
+      });
+    });
+  });
+
+  describe('p1 -> p2, p2 modifies with lower wager', () => {
+    const newWager = toBN(toWei('0.5', 'ether'));
+
+    before(async () => {
+      tx = await lobby.challenge(p2, true, wager, 60, { from: p1, value: wager });
+      expect(tx.logs[0]).to.have.property('event', 'CreatedChallenge');
+      challenge = await Challenge.at(tx.logs[0].args.challenge);
+    });
+
+    it('sets the sender and receiver', async () => {
+      const sender = await challenge.sender();
+      expect(sender).to.equal(p1);
+      const receiver = await challenge.receiver();
+      expect(receiver).to.equal(p2);
+    });
+
+    describe('p2 modifies the challenge', async () => {
+      before(async () => {
+        tx = await challenge.modify(false, newWager, 120, { from: p2, value: newWager });
+      });
+
+      it('switches the sender and receiver', async () => {
+        const sender = await challenge.sender();
+        expect(sender).to.equal(p2);
+        const receiver = await challenge.receiver();
+        expect(receiver).to.equal(p1);
+      });
+
+      it('sets correct proposal', async () => {
+        const p1IsWhite = await challenge.p1IsWhite();
+        const wagerAmount = await challenge.wagerAmount();
+        const timePerMove = await challenge.timePerMove();
+        expect(p1IsWhite).to.equal(false);
+        expect(wagerAmount).to.eql(newWager);
+        expect(timePerMove).to.eql(toBN(120));
+      });
+    });
+
+    describe('p1 accepts', () => {
       let p1StartingBalance;
 
       before(async () => {
         p1StartingBalance = await getBalance(p1).then(Number);
-        tx = await challenge.accept({ from: p2, value: newWager });
+        tx = await challenge.accept({ from: p1, value: newWager });
       });
 
       it('keeps both wagers in the contract', async () => {

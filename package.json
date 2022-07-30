@@ -13,6 +13,8 @@
     "deploy": "aws --profile hbpcb s3 sync --delete dist s3://blockchain-chess-lounge"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^4.7.1",
+    "@openzeppelin/contracts-upgradeable": "^4.7.2",
     "@vue/composition-api": "^1.7.0",
     "bytesize-icons": "^1.4.0",
     "chess.js": "^0.13.3",
@@ -28,6 +30,7 @@
     "vue-router": "3.5.2"
   },
   "devDependencies": {
+    "@openzeppelin/truffle-upgrades": "^1.15.1",
     "@truffle/hdwallet-provider": "^2.0.11",
     "@vue/cli-plugin-babel": "~5.0.6",
     "@vue/cli-service": "~5.0.6",

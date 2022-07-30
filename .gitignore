@@ -7,10 +7,12 @@ cache/
 
 # Temporary excludes
 # Smart contracts for now
+.openzeppelin
 migrations/
 client/assets/
 client/contracts
 addresses
+public/sound
 
 # local env files
 .mnemonic
