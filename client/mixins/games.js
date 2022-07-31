@@ -17,6 +17,7 @@ export default ({
   },
   data() {
     return {
+      moveTimer: null,
       game: null,
       gameEngine: null,
       gameLoaded: false,
@@ -150,13 +151,11 @@ export default ({
   },
   methods: {
     async initGame(address) {
-      console.log('Initialize game contract data', address);
+      console.log('Initialize Game Contract', address);
       this.gameEngine = new Chess();
       this.game = this.contracts.game(address);
       if (!this.game) {
-        this.contracts.registerGame(address);
-        setTimeout(() => this.initGame(address), 1000);
-        return;
+        this.game = this.contracts.registerGame(address);
       }
 
       [ this.gameStatus,
@@ -202,30 +201,21 @@ export default ({
 
       this.lobby.updateGame(this.game.address);
     },
-    listenForGames(cb) {
-      const { lobby } = this.contracts;
-      const eventFilter = lobby.filters.CreatedChallenge(null
-                                                       , null
-                                                       , this.wallet.address);
-      lobby.on(eventFilter, (addr, from, to, ev) => {
-        console.log('Received challenge', addr);
-        //if (ev.blockNumber > this.latestBlock) {
-          this.lobby.newChallenge(addr, from, to);
-          if (cb) cb(addr, from, to);
-        //}
-      });
-    },
-    listenForMoves(cb) {
-      const eventFilter = this.game.filters.MoveSAN([ this.wallet.address, this.opponent ]);
-      this.game.on(eventFilter, async (player, san, flags, ev) => {
-        if (ev.blockNumber > this.latestBlock) {
-          this.refreshGame();
-          // If the move is from the current player, then it will register twice.
-          // We already called tryMove in the chooseMove function.
-          if (player === this.opponent) this.tryMove(san);
-          if (cb) cb(player, san, flags);
-        }
-      });
+    async listenForMoves(cb) {
+      let latestBlock = await this.provider.getBlockNumber();
+      const eventFilter = this.game.filters.MoveSAN(this.opponent);
+      const queryMoves = () => {
+        this.game.queryFilter(eventFilter, latestBlock+1).then(moves => {
+          if (moves.length > 0) this.refreshGame();
+          for (var ev of moves) {
+            const [ player, san, flags ] = ev.args;
+            if (cb) cb(player, san, flags);
+            if (player == this.opponent) this.tryMove(san);
+            latestBlock = ev.blockNumber;
+          }
+        });
+      };
+      this.moveTimer = setInterval(queryMoves, 1000);
     },
     async tryMove(san) {
       const move = this.gameEngine.move(san, { sloppy: true });
@@ -237,7 +227,6 @@ export default ({
 
       // move succeeded
       console.log(`Moved ${move.san} (${move.from} -> ${move.to})`);
-      this.latestBlock = await this.wallet.provider.getBlockNumber();
       this.isWhiteMove = !this.isWhiteMove;
       this.halfmoves++;
       return move.san;
@@ -283,6 +272,12 @@ export default ({
         }
       }
       return 'unknown';
+    }
+  },
+  beforeDestroy() {
+    if (this.moveTimer) {
+      console.warn('Destroy move timer', this.moveTimer);
+      clearInterval(this.moveTimer);
     }
   }
 });

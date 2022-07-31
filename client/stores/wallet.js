@@ -8,6 +8,6 @@ export default defineStore({
     installed: false,
     connected: false,
     address: null,
-    balance: 0,
+    balance: 0
   })
 });

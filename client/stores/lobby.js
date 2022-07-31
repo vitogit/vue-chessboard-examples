@@ -125,10 +125,10 @@ export default defineStore({
       return this.metadata[addr];
     },
     terminate(addr) {
-      if (this.challenges.has(addr)) {
-        this.challenges = this.challenges.filter(addr);
-      } else if (this.games.has(addr)) {
-        this.games = this.games.filter(addr);
+      if (_.contains(this.challenges, addr)) {
+        this.challenges = _.without(this.challenges, addr);
+      } else if (_.contains(this.games, addr)) {
+        this.games = _.without(this.games, addr);
         this.history = [ addr, ...this.history ];
       }
       this.metadata[addr].active = false;

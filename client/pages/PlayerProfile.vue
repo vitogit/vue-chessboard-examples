@@ -65,8 +65,7 @@ export default {
                                                        , this.opponent);
       lobby.once(eventFilter, async (addr, from, to) => {
         console.log('Issued challenge', addr);
-        await lobby.newChallenge(addr, from, to);
-        await this.refreshChallenge();
+        await this.lobby.newChallenge(addr, from, to);
         this.waiting = false;
         this.$router.push('/challenge/'+addr);
       });

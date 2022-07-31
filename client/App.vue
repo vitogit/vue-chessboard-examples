@@ -82,10 +82,10 @@ export default {
       this.contracts.lobby = lobby;
       const challenges = await this.fetchPlayerData();
 
-      this.listenForChallenges((addr, from) => {
-        console.log('Received incoming challenge from', from);
-        this.playAudio('NewChallenge');
-      });
+      // Global Event Listeners
+      this.listenForChallenges(() => this.playAudio('NewChallenge'));
+      this.handleAcceptedChallenge(() => this.playAudio('Notify'));
+      this.handleCanceledChallenge(() => this.playAudio('Explosion'));
     },
     async fetchPlayerData() {
       const { lobby } = this.contracts;
@@ -126,12 +126,18 @@ export default {
       <div id='sidebar'>
         <div class='bordered container'>
           <div id='brand'>
-            <img id='logo' src='./assets/logo1.png' />
             <div>The Blockchain</div>
             <div>Chess Lounge</div>
           </div>
 
           <div id='wallet'>
+            <div class='flex pad-sm align-bottom border-bottom border-sm'>
+              <div class='flex-shrink'>Network</div>
+              <div class='flex-1 flex-end text-caps text-ms'>
+                {{ isConnected ? wallet.network : '---' }}
+              </div>
+            </div>
+
             <div class='flex pad-sm align-bottom border-bottom border-sm'>
               <div class='flex-shrink'>Account</div>
               <div class='flex-1 flex-end text-ms'>
@@ -236,7 +242,7 @@ html, body {
     #sidebar {
       @extend .flex-col;
       @extend .flex-shrink;
-      max-width: 14em;
+      width: 13em;
 
       > .container {
         @extend .padded;

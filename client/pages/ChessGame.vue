@@ -4,6 +4,7 @@ import humanizeDuration from 'humanize-duration';
 import TrashIcon from 'bytesize-icons/dist/icons/trash.svg';
 import FlagIcon from 'bytesize-icons/dist/icons/flag.svg';
 import BanIcon from 'bytesize-icons/dist/icons/ban.svg';
+import walletMixin from '../mixins/wallet';
 import gameMixin from '../mixins/games';
 import ChessBoard from '../components/ChessBoard';
 import Modal from '../components/Modal';
@@ -11,7 +12,7 @@ import Modal from '../components/Modal';
 export default {
   name: 'ChessGame',
   components: { ChessBoard, Modal, TrashIcon, FlagIcon, BanIcon },
-  mixins: [ gameMixin ],
+  mixins: [ walletMixin, gameMixin ],
   data() {
     return {
       waiting: false,
@@ -87,11 +88,13 @@ export default {
       console.log('Submit move', this.proposedMove);
       await this.game.move(this.proposedMove, '0x00');
       this.waiting = true;
+      this.playAudio('swell1');
       const eventFilter = this.game.filters.MoveSAN(this.wallet.address);
       this.game.once(eventFilter, (player, san, flags) => {
         console.log('Move received', san, flags);
         this.waiting = false;
         this.didChooseMove = false;
+        this.playAudio('Blaster');
         this.refreshGame();
       });
     },
@@ -100,11 +103,13 @@ export default {
       this.closeModal();
       await this.game.resign();
       this.waiting = true;
+      this.playAudio('swell3');
       const { lobby } = this.contracts;
       const eventFilter = lobby.filters.GameFinished(this.game.address);
       lobby.once(eventFilter, game => {
         console.log('Resigned');
         this.waiting = false;
+        this.playAudio('Defeat');
         this.refreshGame();
       });
     },
@@ -113,11 +118,13 @@ export default {
       this.closeModal();
       await this.game.claim();
       this.waiting = true;
+      this.playAudio('swell2');
       const { lobby } = this.contracts;
       const eventFilter = lobby.filters.GameFinished(this.game.address);
       lobby.once(eventFilter, (game, winner) => {
         console.log('Victory', winner);
         this.waiting = false;
+        this.playAudio('Victory');
         this.refreshGame();
       });
     },
@@ -125,8 +132,10 @@ export default {
   },
   created() {
     const { contract } = this.$route.params;
+    console.log('game', contract);
     this.initGame(contract)
         .then(() => {
+          console.log('done');
           if (this.inProgress) {
             // Start the timer at the nearest second
             const timeout = 1000 - Date.now()%1000;
@@ -148,7 +157,6 @@ export default {
       <ChessBoard
         id='chessboard'
         class='margin-lg-rl'
-        v-if='gameLoaded'
         v-bind='{ fen, orientation, currentMove, possibleMoves }'
         @onMove='chooseMove'
       />

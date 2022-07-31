@@ -1,11 +1,6 @@
 import useWalletStore from '../stores/wallet';
 
 export default ({
-  data() {
-    return {
-      latestBlock: 0
-    };
-  },
   setup() {
     const wallet = useWalletStore();
     return { wallet };

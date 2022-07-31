@@ -105,7 +105,7 @@ export default ({
       console.log('Initialize challenge contract data', addr);
       if (!this.provider) {
         console.warn('Wallet is NOT connected');
-        setInterval(() => this.initChallenge(addr), 200);
+        setTimeout(() => this.initChallenge(addr), 200);
         return;
       }
       this.challenge = this.contracts.challenge(addr);
@@ -151,17 +151,52 @@ export default ({
 
       return this.lobby.updateChallenge(this.challenge.address);
     },
-    listenForChallenges(cb) {
+    async listenForChallenges(cb) {
       const { lobby } = this.contracts;
       const eventFilter = lobby.filters.CreatedChallenge(null
                                                        , null
                                                        , this.wallet.address);
+      let latestBlock = await this.provider.getBlockNumber();
       lobby.on(eventFilter, (addr, from, to, ev) => {
-        console.log('Received challenge', addr);
-        //if (ev.blockNumber > this.latestBlock) {
+        if (ev.blockNumber > latestBlock) {
+          console.log('Received challenge', addr);
+          latestBlock = ev.blockNumber;
           this.lobby.newChallenge(addr, from, to);
           if (cb) cb(addr, from, to);
-        //}
+        }
+      });
+    },
+    async handleAcceptedChallenge(cb) {
+      const { lobby } = this.contracts;
+      const eventFilter = lobby.filters.AcceptedChallenge(null
+                                                        , null
+                                                        , this.wallet.address);
+      let latestBlock = await this.provider.getBlockNumber();
+      lobby.on(eventFilter, (addr, from, to, ev) => {
+        if (ev.blockNumber > latestBlock) {
+          console.log('Challenge accepted', addr);
+          latestBlock = ev.blockNumber;
+          if (cb) cb(addr, from, to);
+          const challenge = this.contracts.challenge(addr);
+          challenge.game().then(game => {
+            this.lobby.newGame(game);
+            this.lobby.terminate(addr);
+          });
+        }
+      });
+    },
+    async handleCanceledChallenge(cb) {
+      const { lobby } = this.contracts;
+      const eventFilter = lobby.filters.CanceledChallenge(null
+                                                        , null
+                                                        , this.wallet.address);
+      let latestBlock = await this.provider.getBlockNumber();
+      lobby.on(eventFilter, (addr, from, to, ev) => {
+        if (ev.blockNumber > latestBlock) {
+          console.log('Challenge cancelled', addr);
+          if (cb) cb(addr, from, to);
+          this.lobby.terminate(addr);
+        }
       });
     },
     async refreshPlayerBalances() {
