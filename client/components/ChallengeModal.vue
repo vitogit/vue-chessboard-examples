@@ -6,6 +6,7 @@ import BlackPawn from '../assets/icons/blackpawn.svg';
 export default {
   components: { Modal, WhitePawn, BlackPawn },
   props: {
+    disabled: Boolean,
     title: String,
     startAsWhite: Boolean,
     wagerAmount: [ Number, String ],
@@ -77,6 +78,7 @@ export default {
         <button
           class='margin-rl'
           @click='$emit("send")'
+          :disabled='disabled'
         >Send</button>
 
         <button

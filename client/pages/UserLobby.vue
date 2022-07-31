@@ -1,9 +1,10 @@
 <script>
 import _ from 'underscore';
 import { isAddress, getAddress } from 'ethers/lib/utils';
+import { challengeStatus, gameStatus } from '../constants/bcl';
 import challengeMixin from '../mixins/challenges';
-import ChallengeCard from '../containers/ChallengeCard';
-import GameCard from '../containers/GameCard';
+import ChallengeCard from '../components/ChallengeCard';
+import GameCard from '../components/GameCard';
 
 export default {
   name: 'UserLobby',
@@ -22,12 +23,23 @@ export default {
           console.error('No metadata for', addr);
           return false;
         }
+        const { status } = this.lobby.metadata[addr];
+        return (status === challengeStatus.pending);
+      });
+    },
+    incomingChallenges() {
+      return _.filter(this.pendingChallenges, addr => {
+        const metadata = this.lobby.metadata[addr];
+        if (!metadata) {
+          console.error('No metadata for', addr);
+          return false;
+        }
         const { receiver } = this.lobby.metadata[addr];
         return (receiver === this.wallet.address);
       });
     },
-    waitingChallenges() {
-      return _.filter([ ...this.lobby.challenges ], addr => {
+    outgoingChallenges() {
+      return _.filter(this.pendingChallenges, addr => {
         const metadata = this.lobby.metadata[addr];
         if (!metadata) {
           console.error('No metadata for', addr);
@@ -38,31 +50,29 @@ export default {
       });
     },
     currentGames() {
-      return _.filter([ ...this.lobby.games ], addr => {
-        const metadata = this.lobby.metadata[addr];
-        return this.lobby.metadata[addr].status === 0;
+      return _.filter(this.lobby.games, addr => {
+        const data = this.lobby.metadata[addr];
+        return data.status == gameStatus.started;
       });
     },
     playersTurn() {
-      return _.filter([ ...this.lobby.games ], addr => {
-        const metadata = this.lobby.metadata[addr];
+      return _.filter(this.currentGames, addr => {
         const { isWhiteMove, whitePlayer, blackPlayer } = this.lobby.metadata[addr];
         if (this.wallet.address === whitePlayer) return isWhiteMove;
         else if (this.wallet.address === blackPlayer) return !isWhiteMove;
       });
     },
     opponentsTurn() {
-      return _.filter([ ...this.lobby.games ], addr => {
-        const metadata = this.lobby.metadata[addr];
+      return _.filter([ ...this.currentGames ], addr => {
         const { isWhiteMove, whitePlayer, blackPlayer } = this.lobby.metadata[addr];
         if (this.wallet.address === whitePlayer) return !isWhiteMove;
         else if (this.wallet.address === blackPlayer) return isWhiteMove;
       });
     },
     playerHistory() {
-      return _.filter([ ...this.lobby.history ], addr => {
-        const metadata = this.lobby.metadata[addr];
-        if (!metadata) {
+      return _.filter([ ...this.lobby.games ], addr => {
+        const data = this.lobby.metadata[addr];
+        if (!data) {
           console.error('No metadata for', addr);
           return false;
         }
@@ -86,7 +96,8 @@ export default {
         }
       }
       this.$router.push('/profile/'+getAddress(addr));
-    }
+    },
+    data(addr) { return this.lobby.metadata[addr] }
   }
 }
 </script>
@@ -110,12 +121,12 @@ export default {
     <div class='text-lg margin-tb'>Challenges</div>
     <div id='challenges' class='flex-1 flex-wrap'>
       <router-link
-        v-for='c in [ ...pendingChallenges, ...waitingChallenges ]'
+        v-for='c in [ ...incomingChallenges, ...outgoingChallenges ]'
         class='margin'
         :key='`challenge-${c}`'
         :to='"/challenge/"+c'
       >
-        <ChallengeCard :contract='c' />
+        <ChallengeCard v-bind='data(c)' />
       </router-link>
     </div>
 
@@ -127,7 +138,7 @@ export default {
         :key='`game-${g}`'
         :to='"/game/"+g'
       >
-        <GameCard :contract='g' />
+        <GameCard :player='wallet.address' v-bind='data(g)' :showTTM='true' />
       </router-link>
     </div>
 
@@ -135,10 +146,11 @@ export default {
     <div id='history' class='flex flex-wrap'>
       <router-link
         v-for='g in playerHistory'
+        class='margin'
         :key='`history-${g}`'
         :to='"/game/"+g'
       >
-        {{ g }}
+        <GameCard :player='wallet.address' v-bind='data(g)' />
       </router-link>
     </div>
   </div>

@@ -1,32 +1,55 @@
 <script>
+import _ from 'underscore';
 import ethMixin from '../mixins/ethereum';
 import walletMixin from '../mixins/wallet';
 import contractsMixin from '../mixins/contracts';
 import challengeMixin from '../mixins/challenges';
 import useWalletStore from '../stores/wallet';
 import ChallengeModal from '../components/ChallengeModal';
+import GameCard from '../components/GameCard';
 
 export default {
   name: 'PlayerProfile',
-  components: { ChallengeModal },
+  components: { ChallengeModal, GameCard },
   mixins: [ ethMixin, contractsMixin, challengeMixin ],
   data() {
     return {
       loading: false,
       waiting: false,
-      showModal: false
+      showModal: false,
+      // All the players games
+      games: [],
+      // Matches with the current user
+      matches: []
     };
   },
   methods: {
     async init() {
+      const { lobby } = this.contracts;
+
       this.player1 = this.wallet.address;
       this.player2 = this.$route.params.address;
       try {     // This is expected to fail on localhost
-        this.p1Handle = await this.wallet.provider.lookupAddress(this.player1);
-        this.p2Handle = await this.wallet.provider.lookupAddress(this.player2);
+        this.p1Handle = await this.provider.lookupAddress(this.player1);
+        this.p2Handle = await this.provider.lookupAddress(this.player2);
       } catch {}
       if (!this.p1Handle) this.p1Handle = 'No ENS Record';
       if (!this.p2Handle) this.p2Handle = 'No ENS Record';
+
+      const filter = lobby.filters.GameStarted;
+      const [ white, black ] = await Promise.all([
+        lobby.queryFilter(filter(null, this.opponent, null)),
+        lobby.queryFilter(filter(null, null, this.opponent))
+      ]);
+      await Promise.all(_.map([ ...white, ...black ], ev => {
+        const [ addr, p1, p2 ] = ev.args;
+        this.games = [ addr, ...this.games ];
+        if ([ p1, p2 ].includes(this.wallet.address)) {
+          this.matches = [ addr, ...this.matches ];
+        }
+        this.contracts.registerGame(addr);
+        return this.lobby.updateGame(addr);
+      }));
     },
     async sendChallenge() {
       console.log('Sending challenge to', this.opponent);
@@ -37,20 +60,23 @@ export default {
                           , this.timePerMove
                           , { value: this.wagerAmount });
       this.waiting = true;
-
-      // Listen for a new challenge and redirect
       const eventFilter = lobby.filters.CreatedChallenge(null
                                                        , this.wallet.address
                                                        , this.opponent);
-      lobby.once(eventFilter, (addr, from, to) => {
+      lobby.once(eventFilter, async (addr, from, to) => {
         console.log('Issued challenge', addr);
-        let out = this.lobby.newChallenge(addr, from, to);
+        await lobby.newChallenge(addr, from, to);
+        await this.refreshChallenge();
         this.waiting = false;
         this.$router.push('/challenge/'+addr);
       });
-    }
+    },
+    data(addr) { return this.lobby.metadata[addr] }
   },
-  created() { this.loading = true; this.init().then(() => this.loading = false) }
+  created() {
+    this.loading = true;
+    this.init().then(() => this.loading = false);
+  }
 }
 </script>
 
@@ -95,18 +121,33 @@ export default {
         <div class='flex-2 text-ms'>{{ truncAddress(opponent) }}</div>
     </div>
 
-    <div id='match-history'>
-      <div class='text-lg margin-lg-tb'>Match History</div>
+    <div class='text-lg margin-tb'>Match History</div>
+    <div id='match-history' class='flex flex-wrap'>
+      <router-link
+        v-for='g in matches'
+        class='margin'
+        :key='"match-"+g'
+        :to='"/game/"+g'
+      >
+        <GameCard v-bind='data(g)' :player='player1' />
+      </router-link>
     </div>
 
-    <div id='player-history'>
-      <div class='text-lg margin-lg-tb'>Player History</div>
+    <div class='text-lg margin-tb'>Player History</div>
+    <div id='player-history' class='flex flex-wrap'>
+      <router-link
+        v-for='g in games'
+        class='margin'
+        :key='"match-"+g'
+        :to='"/game/"+g'
+      >
+        <GameCard v-bind='data(g)' :player='player2' />
+      </router-link>
     </div>
 
     <ChallengeModal
       v-if='showModal'
       title='New Challenge'
-      :waiting='waiting'
       @close='() => showModal = false'
       @send='() => sendChallenge().then(() => showModal = false)'
       v-bind:startAsWhite='startAsWhite'
@@ -117,6 +158,7 @@ export default {
       @update:tpm='val => displayTPM = val'
       v-bind:timeUnits='timeUnits'
       @update:time-units='val => timeUnits = val'
+      :waiting='waiting'
     />
   </div>
 </template>

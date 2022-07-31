@@ -12,8 +12,9 @@ export const gameStatus = {
   review: 3
 };
 
-export const gameResult = {
-  stalemate: 0,
+export const gameOutcome = {
+  undecided: 0,
   whiteWon: 1,
-  blackWon: 2
+  blackWon: 2,
+  draw: 3
 };

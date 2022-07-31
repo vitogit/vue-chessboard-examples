@@ -129,6 +129,7 @@ export default ({
       return Math.floor(this.timeOfExpiry - Date.now()/1000);
     },
     inProgress() { return this.gameStatus === gameStatus.started },
+    isFinished() { return this.gameStatus === gameStatus.finished },
     inReview() { return this.gameStatus === gameStatus.review },
     gameOver() {
       //return this.isInCheckmate || this.opponentInCheckmate || this.isInStalemate;
@@ -149,13 +150,14 @@ export default ({
   },
   methods: {
     async initGame(address) {
-      this.gameEngine = new Chess();
-      this.game = await this.initGameContract(address);
-      this.gameLoaded = true;
-    },
-    async initGameContract(address) {
       console.log('Initialize game contract data', address);
-      const game = this.contracts.game(address);
+      this.gameEngine = new Chess();
+      this.game = this.contracts.game(address);
+      if (!this.game) {
+        this.contracts.registerGame(address);
+        setTimeout(() => this.initGame(address), 1000);
+        return;
+      }
 
       [ this.gameStatus,
         this.whitePlayer,
@@ -164,19 +166,19 @@ export default ({
         this.timePerMove,
         this.timeOfLastMove
       ] = await Promise.all([
-          game.state(),
-          game.whitePlayer(),
-          game.blackPlayer(),
-          game.isWhiteMove(),
-          game.timePerMove(),
-          game.timeOfLastMove()
+          this.game.state(),
+          this.game.whitePlayer(),
+          this.game.blackPlayer(),
+          this.game.isWhiteMove(),
+          this.game.timePerMove(),
+          this.game.timeOfLastMove()
       ]);
 
       if (this.gameStatus === gameStatus.finished) {
-        this.winner = await game.winner();
+        this.winner = await this.game.winner();
       }
 
-      const moves = await game.queryFilter(game.filters.MoveSAN);
+      const moves = await this.game.queryFilter(this.game.filters.MoveSAN);
       for (var ev of moves) {
         let [ player, san, flags ] = ev.args;
         await this.tryMove(san);
@@ -184,9 +186,8 @@ export default ({
 
       // FIXME: This is a hack just to make some other bug go away.  If you
       //        comment this out then it will think it's the opponents move.
-      this.isWhiteMove = await game.isWhiteMove();
-
-      return game;
+      this.isWhiteMove = await this.game.isWhiteMove();
+      this.gameLoaded = true;
     },
     async refreshGame() {
       console.log('Refresh game data');
@@ -198,8 +199,21 @@ export default ({
         this.game.isWhiteMove(),
         this.game.timeOfLastMove()
       ]);
-      this.lobby.metadata[this.game.address].status = this.gameStatus;
-      this.lobby.metadata[this.game.address].isWhiteMove = this.isWhiteMove;
+
+      this.lobby.updateGame(this.game.address);
+    },
+    listenForGames(cb) {
+      const { lobby } = this.contracts;
+      const eventFilter = lobby.filters.CreatedChallenge(null
+                                                       , null
+                                                       , this.wallet.address);
+      lobby.on(eventFilter, (addr, from, to, ev) => {
+        console.log('Received challenge', addr);
+        //if (ev.blockNumber > this.latestBlock) {
+          this.lobby.newChallenge(addr, from, to);
+          if (cb) cb(addr, from, to);
+        //}
+      });
     },
     listenForMoves(cb) {
       const eventFilter = this.game.filters.MoveSAN([ this.wallet.address, this.opponent ]);

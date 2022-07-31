@@ -23,16 +23,17 @@ export default defineStore({
   actions: {
     _registerObj(obj, abi, addr) {
       const wallet = useWalletStore();
-      const contract = new Contract(addr, abi, wallet.signer || wallet.provider);
-      // TODO Handle if it already exists
-      obj[addr] = contract;
-      return contract;
+      if (obj[addr]) {
+        console.warn('Already had a record of contract', addr);
+        if (this.signer) obj[addr] = obj[addr].connect(wallet.signer);
+      }
+      obj[addr] = new Contract(addr, abi, wallet.signer || wallet.provider);
+      return obj[addr];
     },
     registerChallenge(addr) {
       return this._registerObj(this.challenges, ChallengeContract.abi, addr);
     },
     registerGame(addr) {
-      console.log('new game', addr);
       return this._registerObj(this.games, GameContract.abi, addr);
     }
   }

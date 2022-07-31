@@ -103,12 +103,17 @@ export default ({
   methods: {
     async initChallenge(addr) {
       console.log('Initialize challenge contract data', addr);
+      if (!this.provider) {
+        console.warn('Wallet is NOT connected');
+        setInterval(() => this.initChallenge(addr), 200);
+        return;
+      }
       this.challenge = this.contracts.challenge(addr);
       await this.refreshChallenge();
       this.challengeLoaded = true;
     },
     async refreshChallenge() {
-      console.log('Refresh challenge data');
+      console.log('Refresh challenge data', this.challenge.address);
       [ this.player1,
         this.p1Balance,
         this.player2,
@@ -132,8 +137,8 @@ export default ({
       ]);
 
       try {
-        this.p1Handle = await this.wallet.provider.lookupAddress(this.player1);
-        this.p2Handle = await this.wallet.provider.lookupAddress(this.player2);
+        this.p1Handle = await this.provider.lookupAddress(this.player1);
+        this.p2Handle = await this.provider.lookupAddress(this.player2);
       } catch {}
       if (!this.p1Handle) this.truncAddress(this.player1);
       if (!this.p2Handle) this.truncAddress(this.player2);
@@ -143,6 +148,8 @@ export default ({
       else if (this.timePerMove > 60*60*24) this.timeUnits = 'days';
       else if (this.timePerMove > 60*60) this.timeUnits = 'hours';
       else this.timeUnits = 'minutes';
+
+      return this.lobby.updateChallenge(this.challenge.address);
     },
     listenForChallenges(cb) {
       const { lobby } = this.contracts;
@@ -152,7 +159,7 @@ export default ({
       lobby.on(eventFilter, (addr, from, to, ev) => {
         console.log('Received challenge', addr);
         //if (ev.blockNumber > this.latestBlock) {
-          let out = this.lobby.newChallenge(addr, from, to);
+          this.lobby.newChallenge(addr, from, to);
           if (cb) cb(addr, from, to);
         //}
       });

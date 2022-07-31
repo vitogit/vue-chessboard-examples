@@ -26,11 +26,21 @@ export default {
   mixins: [ ethMixin, walletMixin, contractsMixin, challengeMixin ],
   data () {
     return {
-      loading: true
+      loading: false
     }
   },
   computed: {
-    lobbyAddress() { return process.env.VUE_APP_LOBBY_ADDR }
+    lobbyAddress() {
+      switch (this.wallet.network) {
+        case 'development':
+        case 'unknown':
+          return process.env.VUE_APP_LOCAL_ADDR
+        case 'rinkeby':
+          return process.env.VUE_APP_RINKEBY_ADDR
+        case 'goerli':
+          return process.env.VUE_APP_GOERLI_ADDR
+      }
+    }
   },
   methods: {
     async init() {
@@ -42,8 +52,6 @@ export default {
       }
       console.log('Metamask is installed!');
       this.wallet.installed = true;
-
-      // Setup wallet connection
       this.wallet.provider = new Web3Provider(window.ethereum);
       const accounts = await this.provider.listAccounts();
       if (accounts.length == 0) {
@@ -51,87 +59,52 @@ export default {
         return;
       }
       this.wallet.signer = this.provider.getSigner();
-      // TODO Is BigInt the correct way to store this?
       [ this.wallet.address
+      , this.wallet.network
       , this.wallet.balance ] = await Promise.all([
-        this.signer.getAddress(),
-        this.signer.getBalance().then(BigInt)
+          this.signer.getAddress()
+        , this.provider.getNetwork().then(n => n.name)
+        , this.signer.getBalance().then(BigInt)
       ]);
-      console.log('Connected!');
       this.wallet.connected = true;
-      console.log('Address', this.address);
-      console.log('Balance', this.formatBalance(this.balance), 'ETH');
+      console.log('Connected!');
+      console.log('Address', this.wallet.address);
+      console.log('Balance', this.formatBalance(this.wallet.balance));
+      console.log('Network', this.wallet.network);
+      console.log('Contract', this.lobbyAddress);
 
       // Try to initialize with the signer, else use provider
       // NOTE Would be better to only connect wallet if the
       //      signer is one of the players
-      const lobby = new Contract(process.env.VUE_APP_LOBBY_ADDR
+      const lobby = new Contract(this.lobbyAddress
                                , LobbyContract.abi
                                , this.signer || this.provider);
       this.contracts.lobby = lobby;
       const challenges = await this.fetchPlayerData();
-      this.loading = false;
-    },
-    async fetchPlayerData() {
-      const { lobby } = this.contracts;
 
-      // Get all the challenges to or from the player and sort into pending and accepted
-      const pending = new Set();
-      const accepted = new Set();
-      const events = await this.queryPlayerEvents(lobby, lobby.filters.CreatedChallenge);
-      const challenges = await Promise.all(_.map(events, async ev => {
-        const [ addr, from, to ] = ev.args;
-        console.log('Initializing new challenge', addr);
-        const contract = this.contracts.registerChallenge(addr);
-        const [
-          status, player1, player2, sender, receiver, p1IsWhite, wagerAmount, timePerMove
-        ] = await Promise.all([
-            contract.state(),
-            contract.player1(),
-            contract.player2(),
-            contract.sender(),
-            contract.receiver(),
-            contract.p1IsWhite(),
-            contract.wagerAmount(),
-            contract.timePerMove()
-        ]);
-        this.lobby.metadata[addr] = {
-          status, player1, player2, sender, receiver, p1IsWhite, wagerAmount, timePerMove
-        };
-        if (status === challengeStatus.pending) pending.add(addr);
-        else if (status === challengeStatus.accepted) {
-          const game = await contract.game();
-          accepted.add(game);
-        }
-        return addr;
-      }));
       this.listenForChallenges((addr, from) => {
         console.log('Received incoming challenge from', from);
         this.playAudio('NewChallenge');
       });
-      this.lobby.challenges = pending;
-      console.log('Initialized pending challenges');
+    },
+    async fetchPlayerData() {
+      const { lobby } = this.contracts;
 
-      const started = new Set();
-      const finished = new Set();
-      const games = await Promise.all(_.map(Array.from(accepted), async addr => {
-        console.log('Initializing new game', addr);
-        const contract = await this.contracts.registerGame(addr);
-        const [ status, whitePlayer, blackPlayer, isWhiteMove, timePerMove ] = await Promise.all([
-          contract.state(),
-          contract.whitePlayer(),
-          contract.blackPlayer(),
-          contract.isWhiteMove(),
-          contract.timePerMove()
-        ]);
-        this.lobby.metadata[addr] = {
-          status, whitePlayer, blackPlayer, isWhiteMove, timePerMove
-        };
-        if (status === gameStatus.started) started.add(addr);
-        else if (status === gameStatus.finished) finished.add(addr);
+      const games = [];
+      const events = await this.queryPlayerEvents(lobby, lobby.filters.CreatedChallenge);
+      const challenges = await Promise.all(_.map(events, async ev => {
+        const [ addr, from, to ] = ev.args;
+        const challenge = await this.lobby.newChallenge(addr);
+        const status = await challenge.state();
+        if (status === challengeStatus.accepted) {
+          const game = await challenge.game();
+          games.push(game);
+        }
+        return addr;
       }));
-      this.lobby.games = started;
-      this.lobby.history = finished;
+
+      await Promise.all(_.map(games, this.lobby.newGame));
+      this.lobby.games = this.lobby.games;
 
       return challenges;
     },
@@ -140,7 +113,10 @@ export default {
                 .then(this.init);
     }
   },
-  created() { this.init() }
+  created() {
+    this.loading = true;
+    this.init().then(() => this.loading = false);
+  }
 }
 </script>
 
@@ -150,20 +126,22 @@ export default {
       <div id='sidebar'>
         <div class='bordered container'>
           <div id='brand'>
+            <img id='logo' src='./assets/logo1.png' />
             <div>The Blockchain</div>
             <div>Chess Lounge</div>
           </div>
+
           <div id='wallet'>
             <div class='flex pad-sm align-bottom border-bottom border-sm'>
-              <div class='flex-shrink text-ml'>Account</div>
-              <div class='flex-1 flex-end'>
+              <div class='flex-shrink'>Account</div>
+              <div class='flex-1 flex-end text-ms'>
                 {{ isConnected ? truncAddress(address) : '---' }}
               </div>
             </div>
 
             <div class='flex pad-sm align-bottom'>
-              <div class='flex-shrink text-ml'>Balance</div>
-              <div v-if='isConnected' class='flex-1 flex-end'>
+              <div class='flex-shrink text-md'>Balance</div>
+              <div v-if='isConnected' class='flex-1 flex-end text-ms'>
                 <div class='margin-sm-rl'>
                   {{ formatBalance(balance) }}
                 </div>
@@ -172,6 +150,7 @@ export default {
               <div v-else class='flex-1 flex-end'>---</div>
             </div>
           </div>
+
           <div id='navigation'>
             <ConnectWallet
               :isInstalled='wallet.installed'
@@ -179,21 +158,22 @@ export default {
               :onConnect='this.connectWallet'
               :onClick='() => this.$router.push("/lobby")'
             >Lounge</ConnectWallet>
-            <router-link tag='button' to='/ai'>Fun Play</router-link>
-            <router-link tag='button' to='/about'>Rules</router-link>
-            <router-link tag='button' to='/settings'>Settings</router-link>
+            <router-link tag='button' to='/market'>Market</router-link>
+            <router-link tag='button' to='/about'>About</router-link>
           </div>
         </div>
       </div>
 
       <div id='page' class='flex'>
-        <router-view v-if='!loading' class='flex-1' />
+        <router-view v-if='wallet.connected' class='flex-1' />
       </div>
     </div>
 
     <div id='footer'>
       <div class='flex flex-grow'>
-        <div class='text-sm margin-sm'>Currently deployed on Goerli Testnet.</div>
+        <div class='text-sm margin-sm'>
+          Currently deployed to <a href='https://rinkebyfaucet.com/'>Rinkeby</a> and <a href='https://goerlifaucet.com/'>Goerli</a> testnets.
+        </div>
         <div class='text-sm margin-sm'>Please file bugs :)</div>
       </div>
       <a href='https://twitter.com/TheChessLounge'>
@@ -256,10 +236,15 @@ html, body {
     #sidebar {
       @extend .flex-col;
       @extend .flex-shrink;
+      max-width: 14em;
 
       > .container {
         @extend .padded;
         @extend .pad-lg-tb;
+      }
+
+      #logo {
+        max-width: 69%;
       }
 
       #brand {
@@ -267,7 +252,6 @@ html, body {
         @extend .text-lg;
         @extend .text-center;
         @extend .margin-tb;
-        @extend .margin-lg-rl;
       }
 
       #wallet {

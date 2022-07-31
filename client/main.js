@@ -11,7 +11,7 @@ import PendingChallenge from './pages/PendingChallenge';
 import ChessGame from './pages/ChessGame';
 import AboutPage from './pages/AboutPage';
 import PlayAiPage from './pages/PlayComputer';
-import SettingsPage from './pages/SettingsPage';
+import UnderConstruction from './components/UnderConstruction';
 
 Vue.use(VueRouter);
 Vue.use(VueCompositionAPI);
@@ -30,7 +30,8 @@ window.vm = new Vue({
       { path: '/challenge/:contract', component: PendingChallenge },
       { path: '/game/:contract', component: ChessGame },
       { path: '/about', component: AboutPage },
-      { path: '/settings', component: SettingsPage },
+      { path: '/market', component: UnderConstruction },
+      { path: '/settings', component: UnderConstruction },
     ]
   }),
   pinia,
