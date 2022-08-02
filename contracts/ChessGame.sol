@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-V3
 pragma solidity >=0.4.22 <0.9.0;
 import './Lobby.sol';
 import './Challenge.sol';
+import './lib/stringUtils.sol';
 
 contract ChessGame {
   address public immutable lobby;
@@ -12,7 +13,10 @@ contract ChessGame {
   uint public immutable timePerMove;      // Seconds per move
   uint public timeOfLastMove;             // Seconds from the last move
   bool public isWhiteMove;
-
+  // A common error is the user send the tx twice before the
+  // block is mined.  This is an easy way to prevent it.
+  string private prevWhiteMove;
+  string private prevBlackMove;
   // Moveflags
   bytes1 private whiteFlags;
   bytes1 private blackFlags;
@@ -111,11 +115,17 @@ contract ChessGame {
     else return address(0);
   }
 
+  function loser() public view isFinished returns (address) {
+    if (outcome == GameOutcome.WhiteWon) return blackPlayer;
+    else if (outcome == GameOutcome.BlackWon) return whitePlayer;
+    else return address(0);
+  }
+
   function finish(GameOutcome _outcome) private {
     outcome = _outcome;
     state = State.Finished;
     Challenge(challenge).disburse(_outcome, winner());
-    Lobby(lobby).finishGame(_outcome, winner());
+    Lobby(lobby).finishGame(winner(), loser());
   }
 
   /* Probably going to be easier this way once you implement bitboards
@@ -127,18 +137,29 @@ contract ChessGame {
   }
   */
 
+  // TODO Remove the previous move checks in bitboard implementation
   function move(string memory san, bytes1 flags) public
-      inProgress currentPlayer timerActive {
-    if (msg.sender == whitePlayer) whiteFlags = flags;
-    else if (msg.sender == blackPlayer) blackFlags = flags;
+  inProgress currentPlayer timerActive {
+    if (msg.sender == whitePlayer) {
+      require(!StringUtils.equal(san, prevWhiteMove), 'IllegalMove');
+      prevWhiteMove = san;
+      whiteFlags = flags;
+    }
+    else if (msg.sender == blackPlayer) {
+      require(!StringUtils.equal(san, prevBlackMove), 'IllegalMove');
+      prevBlackMove = san;
+      blackFlags = flags;
+    }
+
     if ((stalemateMask & whiteFlags & blackFlags) > 0) {      // stalemate
       finish(GameOutcome.Draw);
       return;
     }
 
     isWhiteMove = !isWhiteMove;
-    emit MoveSAN(msg.sender, san, flags);
     timeOfLastMove = block.timestamp;
+    emit MoveSAN(msg.sender, san, flags);
+    Lobby(lobby).broadcastMove(msg.sender, otherPlayer());
   }
 
   function resign() external inProgress playerOnly {
@@ -148,7 +169,7 @@ contract ChessGame {
 
   function dispute() external inProgress playerOnly {
     state = State.Review;
-    Lobby(lobby).disputeGame(msg.sender);
+    Lobby(lobby).disputeGame(msg.sender, otherPlayer());
   }
 
   function claim() external inProgress isOtherPlayer timerExpired {

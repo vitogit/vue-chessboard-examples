@@ -3,16 +3,6 @@ const fs = require('fs');
 const mnemonic = fs.readFileSync('.mnemonic').toString().trim();
 
 module.exports = {
-  /**
-   * Networks define how you connect to your ethereum client and let you set the
-   * defaults web3 uses to send transactions. If you don't specify one truffle
-   * will spin up a development blockchain for you on port 9545 when you
-   * run `develop` or `test`. You can ask a truffle command to use a specific
-   * network from the command line, e.g
-   *
-   * $ truffle test --network <network-name>
-   */
-
   networks: {
     // Useful for testing. The `development` name is special - truffle uses it by default
     // if it's defined here and no other network is specified at the command line.
@@ -21,31 +11,33 @@ module.exports = {
     // options below to some value.
     //
     development: {
-     host: "127.0.0.1",     // Localhost (default: none)
-     port: 8545,            // Standard Ethereum port (default: none)
-     network_id: "*",       // Any network (default: none)
+      provider: () => new HDWalletProvider(mnemonic, 'http://localhost:8545'),
+      network_id: "*",       // Any network (default: none)
     },
     test: {
-     host: "127.0.0.1",     // Localhost (default: none)
-     port: 9545,
-     network_id: "*",       // Any network (default: none)
+      host: "127.0.0.1",     // Localhost (default: none)
+      port: 9545,
+      network_id: "*",       // Any network (default: none)
     },
     rinkeby: {
-      provider: () => new HDWalletProvider(mnemonic, 'https://rinkeby.infura.io/v3/2185ad08ea904e85b06c383c4cd6b902'),
+      provider: () => new HDWalletProvider(mnemonic, 'wss://rinkeby.infura.io/ws/v3/2185ad08ea904e85b06c383c4cd6b902'),
       network_id: '4',
       gas: 5500000,
       //gasPrice: 20000000000,  // 20 gwei (in wei) (default: 100 gwei)
       confirmations: 2,    // # of confirmations to wait between deployments. (default: 0)
       timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+      networkCheckTimeout: 60000,
       skipDryRun: true
     },
     goerli: {
-      provider: () => new HDWalletProvider(mnemonic, `https://goerli.infura.io/v3/2185ad08ea904e85b06c383c4cd6b902`),
+      provider: () => new HDWalletProvider(mnemonic, `wss://goerli.infura.io/ws/v3/2185ad08ea904e85b06c383c4cd6b902`),
       network_id: '5',
       gas: 4465030,
       gasPrice: 20000000000,  // 20 gwei (in wei) (default: 100 gwei)
       confirmations: 2,    // # of confirmations to wait between deployments. (default: 0)
       timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+      networkCheckTimeout: 60000,
+      skipDryRun: true
     },
     //
     // An additional network, but with some advanced options…

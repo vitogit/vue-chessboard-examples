@@ -43,7 +43,7 @@ contract('Lobby', function (accounts) {
     it('players can\'t finish the game', async () => {
       for (var player of [ p1, p2, p3, arbiter ]) {
         try {
-          await lobby.finishGame(1, player, { from: player });
+          await lobby.finishGame(player, '0x0000000000000000000000000000000000000000', { from: player });
           assert.fail('Should have failed'); 
         } catch(err) {
           expect(err.reason).to.equal('GameContractOnly');

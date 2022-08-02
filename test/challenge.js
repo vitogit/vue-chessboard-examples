@@ -132,7 +132,8 @@ contract('Challenge', accounts => {
         const [ ev ] = _.filter(logs, l => l.event === 'AcceptedChallenge');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.challenge', challenge.address);
-        expect(ev).to.have.nested.property('args.player', p2);
+        expect(ev).to.have.nested.property('args.sender', p2);
+        expect(ev).to.have.nested.property('args.receiver', p1);
       });
 
       it('lobby sends a GameStarted event', async function () {
@@ -193,7 +194,8 @@ contract('Challenge', accounts => {
         const [ ev ] = _.filter(logs, l => l.event === 'CanceledChallenge');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.challenge');
-        expect(ev).to.have.nested.property('args.player', p2);
+        expect(ev).to.have.nested.property('args.sender', p2);
+        expect(ev).to.have.nested.property('args.receiver', p1);
       });
 
       it('sets the state to rejected', async () => {
@@ -252,7 +254,8 @@ contract('Challenge', accounts => {
         const [ ev ] = _.filter(logs, l => l.event === 'CanceledChallenge');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.challenge');
-        expect(ev).to.have.nested.property('args.player', p1);
+        expect(ev).to.have.nested.property('args.sender', p1);
+        expect(ev).to.have.nested.property('args.receiver', p2);
       });
 
       it('sets the state to canceled', async () => {

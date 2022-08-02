@@ -11,14 +11,30 @@ contract('ChessGame', function (accounts) {
   let lobby, challenge, game, tx, white, black;
   const wager = toBN(toWei('1', 'ether'));
 
+  const whiteMoves = ['a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3',
+                      'a4', 'b4', 'c4', 'd4', 'e4', 'f4', 'g4', 'h4'];
+  const blackMoves = ['a6', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6',
+                      'a5', 'b5', 'c5', 'd5', 'e5', 'f5', 'g5', 'h5'];
+  let lastWhiteMove, lastBlackMove;
+
   before(async () => { lobby = await Lobby.deployed() });
 
   async function movePiece(player, san, flags='0x00') {
-    if (!san)
-    if (player === white) san = 'e3';
-    else if (player === black) san = 'e6';
-    else san='e3';      // Some unauthroized player.
-    const tx = await game.move(san, flags, { from: player });
+    if (!san) {
+      if (player === white) san = whiteMoves.shift();
+      else if (player === black) san = blackMoves.shift();
+      else san='e3';          // Some unauthroized player.
+    }
+    let tx;
+    try {
+      tx = await game.move(san, flags, { from: player });
+      if (player === white) lastWhiteMove = san;
+      else if (player === black) lastBlackMove = san;
+    } catch(err) {
+      if (player === white) whiteMoves.unshift(san);
+      else if (player === black) blackMoves.unshift(san);
+      throw err;
+    }
     return tx;
   }
 
@@ -81,15 +97,7 @@ contract('ChessGame', function (accounts) {
 
     describe('white moves', () => {
       before(async () => {
-        tx = await movePiece(white, 'e3');
-      });
-
-      it('fires a MoveSAN event', async () => {
-        const [ ev ] = _.filter(tx.logs, l => l.event === 'MoveSAN');
-        expect(ev).to.not.be.null;
-        expect(ev).to.have.nested.property('args.player', white);
-        expect(ev).to.have.nested.property('args.san', 'e3');
-        expect(ev).to.have.nested.property('args.flags', '0x00');
+        tx = await movePiece(white);
       });
 
       it('switches to black\'s move', async () => {
@@ -97,9 +105,26 @@ contract('ChessGame', function (accounts) {
         expect(whiteMove).to.equal(false);
       });
 
-      it('blocks white from moving', async () => {
+      it('fires a MoveSAN event', async () => {
+        const [ ev ] = _.filter(tx.logs, l => l.event === 'MoveSAN');
+        expect(ev).to.not.be.null;
+        expect(ev).to.have.nested.property('args.player', white);
+        expect(ev).to.have.nested.property('args.san', lastWhiteMove);
+        expect(ev).to.have.nested.property('args.flags', '0x00');
+      });
+
+      it('lobby sends a PlayerMoved event', async function () {
+        const logs = await lobby.getPastEvents();
+        const [ ev ] = _.filter(logs, l => l.event === 'PlayerMoved');
+        expect(ev).to.be.ok;
+        expect(ev).to.have.nested.property('args.game', game.address);
+        expect(ev).to.have.deep.nested.property('args.sender', white);
+        expect(ev).to.have.deep.nested.property('args.receiver', black);
+      });
+
+      it('blocks white from moving again', async () => {
         try {
-          await movePiece(white, 'e6');
+          await movePiece(white);
           assert.fail('The contract should have failed');
         } catch (err) {
           expect(err.reason).to.equal('CurrentPlayerOnly');
@@ -112,17 +137,26 @@ contract('ChessGame', function (accounts) {
         tx = await movePiece(black);
       });
 
+      it('switches to white\'s move', async () => {
+        const whiteMove = await game.isWhiteMove();
+        expect(whiteMove).to.equal(true);
+      });
+
       it('fires a MoveSAN event', async () => {
         const [ ev ] = _.filter(tx.logs, l => l.event === 'MoveSAN');
         expect(ev).to.not.be.null;
         expect(ev).to.have.nested.property('args.player', black);
-        expect(ev).to.have.nested.property('args.san', 'e6');
+        expect(ev).to.have.nested.property('args.san', lastBlackMove);
         expect(ev).to.have.nested.property('args.flags', '0x00');
       });
 
-      it('switches to white\'s move', async () => {
-        const whiteMove = await game.isWhiteMove();
-        expect(whiteMove).to.equal(true);
+      it('lobby sends a PlayerMoved event', async function () {
+        const logs = await lobby.getPastEvents();
+        const [ ev ] = _.filter(logs, l => l.event === 'PlayerMoved');
+        expect(ev).to.be.ok;
+        expect(ev).to.have.nested.property('args.game', game.address);
+        expect(ev).to.have.deep.nested.property('args.sender', black);
+        expect(ev).to.have.deep.nested.property('args.receiver', white);
       });
 
       it('blocks black from moving', async () => {
@@ -135,13 +169,27 @@ contract('ChessGame', function (accounts) {
       });
     });
 
-    it('blocks p3 from moving', async () => {
-      try {
-        await movePiece(p3);
-        assert.fail('The contract should have failed');
-      } catch (err) {
-        expect(err.reason).to.equal('CurrentPlayerOnly');
-      }
+    describe('p3 tries to submit a move', () => {
+      it('throws an error', async () => {
+        try {
+          await movePiece(p3);
+          assert.fail('The contract should have failed');
+        } catch (err) {
+          expect(err.reason).to.equal('CurrentPlayerOnly');
+        }
+      });
+    });
+
+    // TODO Need to test this for black player
+    describe('white tries to submit the same move twice', () => {
+      it('throws an error', async () => {
+        try {
+          await movePiece(white, lastWhiteMove);
+          assert.fail('The contract should have failed');
+        } catch (err) {
+          expect(err.reason).to.equal('IllegalMove');
+        }
+      });
     });
 
     describe('white resigns during white move', () => {
@@ -169,8 +217,8 @@ contract('ChessGame', function (accounts) {
         const [ ev ] = _.filter(logs, l => l.event === 'GameFinished');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.game', game.address);
-        expect(ev).to.have.deep.nested.property('args.outcome', toBN(2));
-        expect(ev).to.have.nested.property('args.winner', black);
+        expect(ev).to.have.deep.nested.property('args.winner', black);
+        expect(ev).to.have.deep.nested.property('args.loser', white);
       });
 
       it('sends both wagers to black', async () => {
@@ -233,8 +281,8 @@ contract('ChessGame', function (accounts) {
         const [ ev ] = _.filter(logs, l => l.event === 'GameFinished');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.game', game.address);
-        expect(ev).to.have.deep.nested.property('args.outcome', toBN(1));
-        expect(ev).to.have.nested.property('args.winner', white);
+        expect(ev).to.have.deep.nested.property('args.winner', white);
+        expect(ev).to.have.deep.nested.property('args.loser', black);
       });
 
       it('sends both wagers to white', async () => {
@@ -271,6 +319,15 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.have.nested.property('args.flags', '0x04');
       });
 
+      it('lobby sends a PlayerMoved event', async function () {
+        const logs = await lobby.getPastEvents();
+        const [ ev ] = _.filter(logs, l => l.event === 'PlayerMoved');
+        expect(ev).to.be.ok;
+        expect(ev).to.have.nested.property('args.game', game.address);
+        expect(ev).to.have.deep.nested.property('args.sender', white);
+        expect(ev).to.have.deep.nested.property('args.receiver', black);
+      });
+
       it('doesn\'t change the state yet', async function () {
         const state = await game.state();
         expect(state).to.eql(toBN(0));
@@ -298,6 +355,12 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.be.undefined;
       });
 
+      it('lobby doesn\'t a PlayerMoved event', async function () {
+        const logs = await lobby.getPastEvents();
+        const [ ev ] = _.filter(logs, l => l.event === 'PlayerMoved');
+        expect(ev).to.be.undefined;
+      });
+
       it('changes the state to Finished', async function () {
         const state = await game.state();
         expect(state).to.eql(toBN(1));
@@ -318,8 +381,8 @@ contract('ChessGame', function (accounts) {
         const [ ev ] = _.filter(logs, l => l.event === 'GameFinished');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.game', game.address);
-        expect(ev).to.have.deep.nested.property('args.outcome', toBN(3));
         expect(ev).to.have.nested.property('args.winner', '0x0000000000000000000000000000000000000000');
+        expect(ev).to.have.nested.property('args.loser', '0x0000000000000000000000000000000000000000');
       });
 
       it('returns wager to white player', async () => {
@@ -437,6 +500,15 @@ contract('ChessGame', function (accounts) {
         expect(ev).to.have.nested.property('args.flags', '0x00');
       });
 
+      it('lobby sends a PlayerMoved event', async function () {
+        const logs = await lobby.getPastEvents();
+        const [ ev ] = _.filter(logs, l => l.event === 'PlayerMoved');
+        expect(ev).to.be.ok;
+        expect(ev).to.have.nested.property('args.game', game.address);
+        expect(ev).to.have.deep.nested.property('args.sender', white);
+        expect(ev).to.have.deep.nested.property('args.receiver', black);
+      });
+
       it('arbiter can\'t rule on the outcome yet', async () => {
         try {
           await game.resolve(2, black, { from: arbiter });
@@ -467,7 +539,8 @@ contract('ChessGame', function (accounts) {
         const [ ev ] = _.filter(logs, l => l.event === 'GameDisputed');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.game', game.address);
-        expect(ev).to.have.nested.property('args.player', black);
+        expect(ev).to.have.nested.property('args.sender', black);
+        expect(ev).to.have.nested.property('args.receiver', white);
       });
 
       it('blocks the players from moving anymore', async () => {
@@ -532,8 +605,8 @@ contract('ChessGame', function (accounts) {
         const [ ev ] = _.filter(logs, l => l.event === 'GameFinished');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.game', game.address);
-        expect(ev).to.have.deep.nested.property('args.outcome', toBN(2));
-        expect(ev).to.have.nested.property('args.winner', black);
+        expect(ev).to.have.deep.nested.property('args.winner', black);
+        expect(ev).to.have.deep.nested.property('args.loser', white);
       });
 
       it('arbiter can\'t change the outcome now', async () => {
@@ -632,8 +705,8 @@ contract('ChessGame', function (accounts) {
         const [ ev ] = _.filter(logs, l => l.event === 'GameFinished');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.game', game.address);
-        expect(ev).to.have.deep.nested.property('args.outcome', toBN(1));
-        expect(ev).to.have.nested.property('args.winner', white);
+        expect(ev).to.have.deep.nested.property('args.winner', white);
+        expect(ev).to.have.deep.nested.property('args.loser', black);
       });
 
       it('award both wagers to white', async () => {
@@ -710,8 +783,8 @@ contract('ChessGame', function (accounts) {
         const [ ev ] = _.filter(logs, l => l.event === 'GameFinished');
         expect(ev).to.be.ok;
         expect(ev).to.have.nested.property('args.game', game.address);
-        expect(ev).to.have.deep.nested.property('args.outcome', toBN(3));
-        expect(ev).to.have.nested.property('args.winner');
+        expect(ev).to.have.deep.nested.property('args.winner', '0x0000000000000000000000000000000000000000');
+        expect(ev).to.have.deep.nested.property('args.loser', '0x0000000000000000000000000000000000000000');
       });
 
       it('returns wager to white player', async () => {

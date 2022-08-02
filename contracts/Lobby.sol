@@ -10,18 +10,27 @@ contract Lobby {
   event CreatedChallenge(address challenge
                        , address indexed player1
                        , address indexed player2);
+  event ModifiedChallenge(address indexed challenge
+                        , address indexed sender
+                        , address indexed receiver);
   event AcceptedChallenge(address indexed challenge
-                        , address indexed player);
+                        , address indexed sender
+                        , address indexed receiver);
   event CanceledChallenge(address indexed challenge
-                        , address indexed player);
+                        , address indexed sender
+                        , address indexed receiver);
   event GameStarted(address game
                   , address indexed whitePlayer
                   , address indexed blackPlayer);
   event GameFinished(address indexed game
                    , address indexed winner
-                   , ChessGame.GameOutcome outcome);
+                   , address indexed loser);
   event GameDisputed(address indexed game
-                   , address indexed player);
+                   , address indexed sender
+                   , address indexed receiver);
+  event PlayerMoved(address game
+                  , address indexed sender
+                  , address indexed receiver);
 
   struct ChallengeMetadata { Challenge.State state; address game; bool exists; }
   struct GameMetadata { ChessGame.State state; address challenge; bool exists; }
@@ -69,15 +78,17 @@ contract Lobby {
     emit CreatedChallenge(address(_challenge), msg.sender, _player2);
   }
 
-  function updateChallenge(address _player, Challenge.State _state)
+  function updateChallenge(address _sender, address _receiver, Challenge.State _state)
   external isCurrentChallenge {
     address _challenge = msg.sender;
-    if (_state == Challenge.State.Accepted) {
-      emit AcceptedChallenge(_challenge, _player);
+    if (_state == Challenge.State.Pending) {
+      emit ModifiedChallenge(_challenge, _sender, _receiver);
+    } else if (_state == Challenge.State.Accepted) {
+      emit AcceptedChallenge(_challenge, _sender, _receiver);
     } else if (_state == Challenge.State.Canceled
             || _state == Challenge.State.Declined) {
       delete challenges[_challenge];
-      emit CanceledChallenge(_challenge, _player);
+      emit CanceledChallenge(_challenge, _sender, _receiver);
     }
   }
 
@@ -93,19 +104,25 @@ contract Lobby {
     emit GameStarted(_game, _whitePlayer, _blackPlayer);
   }
 
-  function finishGame(ChessGame.GameOutcome _outcome, address _winner)
+  function finishGame(address _winner, address _loser)
   external isCurrentGame {
     address _game = msg.sender;
     address _challenge = games[_game].challenge;
     delete games[_game];
     delete challenges[_challenge];
-    emit GameFinished(_game, _winner, _outcome);
+    emit GameFinished(_game, _winner, _loser);
   }
 
-  function disputeGame(address _player)
+  function broadcastMove(address _sender, address _receiver)
   external isCurrentGame {
     address _game = msg.sender;
-    emit GameDisputed(_game, _player);
+    emit PlayerMoved(_game, _sender, _receiver);
+  }
+
+  function disputeGame(address _sender, address _receiver)
+  external isCurrentGame {
+    address _game = msg.sender;
+    emit GameDisputed(_game, _sender, _receiver);
   }
 
   function changeArbiter(address _arbiter) external arbiterOnly {

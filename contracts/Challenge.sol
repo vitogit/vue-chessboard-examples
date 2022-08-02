@@ -158,25 +158,25 @@ contract Challenge {
     p1IsWhite = _p1IsWhite;
     wagerAmount = _wagerAmount;
     timePerMove = _timePerMove;
-    emit ChallengeModified(msg.sender);
+    Lobby(lobby).updateChallenge(sender, receiver, state);
   }
 
   function cancel() external isPending senderOnly setSenderReceiver {
     state = State.Canceled;
-    Lobby(lobby).updateChallenge(msg.sender, state);
+    Lobby(lobby).updateChallenge(sender, receiver, state);
     refund();
   }
 
   function decline() external isPending receiverOnly setSenderReceiver {
     state = State.Declined;
-    Lobby(lobby).updateChallenge(msg.sender, state);
+    Lobby(lobby).updateChallenge(sender, receiver, state);
     refund();
   }
 
   function accept() external payable
   isPending receiverOnly updateFunds bothPlayersFunded setSenderReceiver {
     state = State.Accepted;
-    Lobby(lobby).updateChallenge(msg.sender, state);
+    Lobby(lobby).updateChallenge(msg.sender, receiver, state);
     address white = whitePlayer();
     address black = blackPlayer();
     ChessGame _game = new ChessGame(white, black, timePerMove);
@@ -197,5 +197,7 @@ contract Challenge {
       player1.transfer(p1Balance);
       player2.transfer(p2Balance);
     }
+    p1Balance = 0;
+    p2Balance = 0;
   }
 }
