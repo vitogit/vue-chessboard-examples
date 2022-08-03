@@ -20,9 +20,9 @@ contract ChessGame {
   // Moveflags
   bytes1 private whiteFlags;
   bytes1 private blackFlags;
-  bytes1 private checkMask = 0x01;
-  bytes1 private checkmateMask = 0x02;
-  bytes1 private stalemateMask = 0x04;
+  bytes1 private immutable checkMask = 0x01;
+  bytes1 private immutable checkmateMask = 0x02;
+  bytes1 private immutable stalemateMask = 0x04;
 
   enum GameOutcome { Undecided, WhiteWon, BlackWon, Draw }
   GameOutcome public outcome;
@@ -90,12 +90,12 @@ contract ChessGame {
   constructor(address white, address black, uint movetime) {
     challenge = msg.sender;
     lobby = Challenge(challenge).lobby();
-    arbiter = Lobby(lobby).arbiter();
     whitePlayer = white;
     blackPlayer = black;
     timePerMove = movetime;
     isWhiteMove = true;
     timeOfLastMove = block.timestamp;
+    arbiter = Lobby(lobby).arbiter();
     state = State.Started;
   }
 
@@ -138,8 +138,8 @@ contract ChessGame {
   */
 
   // TODO Remove the previous move checks in bitboard implementation
-  function move(string memory san, bytes1 flags) public
-  inProgress currentPlayer timerActive {
+  function move(string memory san, bytes1 flags)
+  public inProgress currentPlayer timerActive {
     if (msg.sender == whitePlayer) {
       require(!StringUtils.equal(san, prevWhiteMove), 'IllegalMove');
       prevWhiteMove = san;

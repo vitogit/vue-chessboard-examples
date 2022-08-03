@@ -6,6 +6,7 @@ import './ChessGame.sol';
 contract Lobby {
   bool private initialized;
   address public arbiter;
+  address public algozSigningAddress;
 
   event CreatedChallenge(address challenge
                        , address indexed player1
@@ -125,7 +126,15 @@ contract Lobby {
     emit GameDisputed(_game, _sender, _receiver);
   }
 
-  function changeArbiter(address _arbiter) external arbiterOnly {
+  /*
+   * Arbiter functions
+   */
+
+  function setArbiter(address _arbiter) external arbiterOnly {
     arbiter = _arbiter;
+  }
+
+  function setAlgozAddr(address _algoz) external arbiterOnly {
+    algozSigningAddress = _algoz;
   }
 }
